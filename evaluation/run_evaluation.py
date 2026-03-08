@@ -151,6 +151,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--difficulty", help="Filtrar por dificuldade (easy/medium/hard)")
     parser.add_argument("--limit", type=int, help="Limitar número de exemplos avaliados")
     parser.add_argument("--no-indexes", action="store_true", help="Usar fallback léxico (sem embeddings)")
+    parser.add_argument("--planning", action="store_true", help="Ativa o nó de planejamento CoT antes da geração SQL")
+    parser.add_argument("--ids", help="Avaliar apenas IDs específicos separados por vírgula (ex: GT028,GT082)")
     return parser.parse_args()
 
 
@@ -158,15 +160,19 @@ def main() -> None:
     args = parse_args()
 
     use_indexes = not args.no_indexes
+    use_planning = args.planning
     run_idx = _next_run_index()
 
     print("=" * 60)
     print(f"EVALUATION — Text-to-SQL Ground Truth (135 exemplos) — run {run_idx}")
     print(f"Índices semânticos: {'SIM' if use_indexes else 'NÃO (baseline léxico)'}")
+    print(f"Planejamento CoT:   {'SIM' if use_planning else 'NÃO'}")
     if args.difficulty:
         print(f"Filtro dificuldade: {args.difficulty}")
     if args.limit:
         print(f"Limite: {args.limit} exemplos")
+    if args.ids:
+        print(f"IDs selecionados: {args.ids}")
     print("=" * 60)
 
     # 1. Carrega índices
@@ -183,12 +189,18 @@ def main() -> None:
     pipeline = Text2SQLPipeline(
         schema_store=schema_store,
         few_shot_store=few_shot_store,
+        use_planning=use_planning,
     )
 
     # 3. Carrega ground truth
     gt_entries = load_ground_truth(GT_PATH)
 
     # 4. Aplica filtros
+    if args.ids:
+        id_set = {i.strip() for i in args.ids.split(",")}
+        gt_entries = [e for e in gt_entries if e.id in id_set]
+        print(f"\nFiltrado: {len(gt_entries)} entradas com IDs={args.ids}")
+
     if args.difficulty:
         gt_entries = [e for e in gt_entries if e.difficulty == args.difficulty]
         print(f"\nFiltrado: {len(gt_entries)} entradas com difficulty='{args.difficulty}'")
@@ -205,6 +217,7 @@ def main() -> None:
     # 6. Relatório
     results = build_results_json(records)
     results["run"] = run_idx
+    results["use_planning"] = use_planning
     print_terminal_report(records, results)
 
     # 7. Salva evaluation/results/results_{i}.json

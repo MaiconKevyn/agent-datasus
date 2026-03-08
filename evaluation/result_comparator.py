@@ -14,6 +14,9 @@ def normalize_value(v) -> str:
     de precisão entre ROUND(x, 0) e ROUND(x, 2) quando o valor real é o mesmo.
     """
     if isinstance(v, float):
+        import math
+        if math.isnan(v) or math.isinf(v):
+            return str(v)
         decimals = 0 if abs(v) >= 1_000_000 else 1
         # Use Decimal(str(v)) to avoid binary float repr issues (e.g. round(6.55, 1)=6.5 not 6.6)
         return str(round(decimal.Decimal(str(v)), decimals))

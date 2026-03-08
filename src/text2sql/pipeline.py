@@ -49,6 +49,48 @@ TEMPERATURE = 0.0
 MAX_REPAIR_ATTEMPTS = 3
 MAX_ROWS = 500
 
+# ---------------------------------------------------------------------------
+# Prompt do planejador (CoT antes da geração de SQL)
+# ---------------------------------------------------------------------------
+
+PLAN_SYSTEM_PROMPT = """Você é um planejador de queries SQL para o banco SIH-RD do DATASUS.
+Dado um schema e uma pergunta, produza um plano estruturado ANTES de gerar o SQL.
+
+Responda com JSON válido no seguinte formato:
+{
+  "tabelas": ["internacoes", "cid", "municipios", ...],
+  "filtros": "filtros WHERE a aplicar (MORTE=TRUE, IDADE BETWEEN x AND y, etc.)",
+  "agrupamento": "colunas para GROUP BY",
+  "top_n_por_grupo": {
+    "ativo": true | false,
+    "n": 5,
+    "grupo": "coluna de partição (estado, faixa_etaria, sexo, ...)",
+    "ordenar_por": "métrica para ORDER BY dentro de cada grupo"
+  },
+  "escopo_geografico": "sem filtro | WHERE estado='RS' | WHERE estado IN ('MA','RS') | etc.",
+  "metrica": "o que calcular (COUNT(*), AVG(VAL_UTI), SUM(MORTE::INT), etc.)",
+  "colunas_saida": ["col1", "col2", ...],
+  "join_cid": true | false,
+  "notas": "observações especiais"
+}
+
+REGRA para join_cid:
+- Se a pergunta menciona "diagnóstico", "motivo de internação", "causa de morte", "CID", "doença" →
+  join_cid=true e use cid.CD_DESCRICAO como coluna de saída, não DIAG_PRINC (que é código, não nome)
+- JOIN: internacoes.DIAG_PRINC = cid.CID (ou CID_MORTE = cid.CID para causa de morte)
+- NUNCA exiba o código bruto DIAG_PRINC na saída quando a pergunta quer nomes de diagnósticos
+
+REGRAS para top_n_por_grupo:
+- Se a pergunta pede "top N por [grupo]", "N mais X para cada [grupo]", "N de cada [grupo]" → ativo=true
+- Exemplos: "3 hospitais por estado", "10 diagnósticos por faixa etária", "5 procedimentos para cada sexo"
+- Quando ativo=true, a SQL DEVE usar ROW_NUMBER() OVER (PARTITION BY grupo ORDER BY metrica DESC) e filtrar rn <= N
+- NUNCA use apenas LIMIT N quando o resultado esperado é N por grupo (total = N × num_grupos)
+
+REGRA para escopo_geografico:
+- Pergunta menciona RS/MA explicitamente como agrupamento → WHERE estado IN ('MA','RS')
+- Pergunta menciona um estado específico para filtro → WHERE estado = 'RS' (ou 'MA')
+- Pergunta não menciona estado → sem filtro geográfico"""
+
 SYSTEM_PROMPT = """Você é um especialista em SQL para o banco SIH-RD do DATASUS.
 O banco contém dados de internações hospitalares do SUS nos estados RS e MA, período 2008-2023.
 Use EXCLUSIVAMENTE DuckDB SQL.
@@ -160,6 +202,7 @@ class PipelineResult:
     tokens_used: dict[str, int] = field(default_factory=dict)
     tables_used: list[str] = field(default_factory=list)
     schema_tables_selected: list[str] = field(default_factory=list)
+    plan: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -171,6 +214,7 @@ class Text2SQLPipeline:
         self,
         schema_store: EmbeddingStore | None = None,
         few_shot_store: FewShotStore | None = None,
+        use_planning: bool = False,
     ) -> None:
         """
         Args:
@@ -178,10 +222,13 @@ class Text2SQLPipeline:
                           Se None, usa schema completo como fallback.
             few_shot_store: Índice de pares NL-SQL pré-construído.
                             Se None, usa matching léxico como fallback.
+            use_planning: Se True, gera um plano CoT antes de gerar SQL.
+                          O plano é incluído no prompt de geração para guiar o LLM.
         """
         self._client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         self._schema_store = schema_store
         self._few_shot_store = few_shot_store
+        self._use_planning = use_planning
         self._logger = TraceLogger()
 
     # ── Etapa 1: Schema linking ──────────────────────────────────────────────
@@ -203,6 +250,44 @@ class Text2SQLPipeline:
         entries = get_relevant_entries(question)
         return format_domain_rules(entries)
 
+    # ── Etapa 1b: Geração de plano CoT (opcional) ────────────────────────────
+
+    def _generate_plan(
+        self, question: str, schema_prompt: str
+    ) -> tuple[str, dict]:
+        """
+        Chama o LLM para gerar um plano estruturado (JSON) antes da geração de SQL.
+        Retorna (plan_text, tokens).
+        """
+        import json as _json
+        user_content = (
+            f"SCHEMA DO BANCO:\n{schema_prompt}\n\n"
+            f"PERGUNTA: {question}\n\n"
+            "Gere o plano JSON:"
+        )
+        response = self._client.chat.completions.create(
+            model=MODEL,
+            messages=[
+                {"role": "system", "content": PLAN_SYSTEM_PROMPT},
+                {"role": "user", "content": user_content},
+            ],
+            temperature=0.0,
+            response_format={"type": "json_object"},
+        )
+        plan_text = response.choices[0].message.content.strip()
+        tokens = {
+            "input": response.usage.prompt_tokens,
+            "output": response.usage.completion_tokens,
+            "total": response.usage.total_tokens,
+        }
+        # Tenta formatar o JSON para inclusão legível no prompt
+        try:
+            parsed = _json.loads(plan_text)
+            plan_text = _json.dumps(parsed, ensure_ascii=False, indent=2)
+        except Exception:
+            pass
+        return plan_text, tokens
+
     # ── Etapa 2: Few-shot selection ──────────────────────────────────────────
 
     def _get_few_shot(self, question: str) -> str:
@@ -223,16 +308,63 @@ class Text2SQLPipeline:
         domain_rules: str,
         few_shot: str,
         error: str | None = None,
+        plan: str | None = None,
     ) -> list[dict]:
+        import json as _json
+
         repair_block = ""
         if error:
             repair_block = f"\nERRO NA TENTATIVA ANTERIOR (corrija o SQL):\n{error}\n"
+
+        plan_block = ""
+        if plan:
+            # Extrai apenas os avisos específicos do plano — NÃO inclui o JSON completo
+            # (incluir o plano completo introduz erros do planejador que causam regressões)
+            warnings_list: list[str] = []
+            try:
+                parsed_plan = _json.loads(plan)
+
+                # Detecta top_n_por_grupo → injeta template CTE obrigatório
+                top_n = parsed_plan.get("top_n_por_grupo", {})
+                if top_n.get("ativo") is True:
+                    n = top_n.get("n", "N")
+                    grupo = top_n.get("grupo", "grupo")
+                    ordenar = top_n.get("ordenar_por", "COUNT(*) DESC")
+                    warnings_list.append(
+                        f"⚠️  TOP-N POR GRUPO detectado — use OBRIGATORIAMENTE o padrão CTE:\n"
+                        f"WITH ranked AS (\n"
+                        f"    SELECT {grupo} AS grupo_col, <colunas_detalhe>, <metrica>,\n"
+                        f"           ROW_NUMBER() OVER (PARTITION BY {grupo} ORDER BY {ordenar}) AS rn\n"
+                        f"    FROM <tabelas> WHERE <filtros>\n"
+                        f"    GROUP BY {grupo}, <colunas_detalhe>\n"
+                        f")\n"
+                        f"SELECT grupo_col, <colunas_detalhe>, <metrica> FROM ranked WHERE rn <= {n};\n"
+                        f"NUNCA use HAVING ROW_NUMBER() (causa erro DuckDB). "
+                        f"Total esperado: {n} × nº grupos."
+                    )
+
+                # Detecta join_cid → injeta instrução de JOIN cid
+                if parsed_plan.get("join_cid") is True:
+                    warnings_list.append(
+                        "⚠️  JOIN CID NECESSÁRIO — use cid.CD_DESCRICAO:\n"
+                        "   JOIN cid ON internacoes.DIAG_PRINC = cid.CID\n"
+                        "   NUNCA retorne código bruto DIAG_PRINC — retorne cid.CD_DESCRICAO."
+                    )
+            except Exception:
+                pass
+
+            if warnings_list:
+                plan_block = (
+                    "\nINSTRUÇÕES ADICIONAIS (baseadas na análise da pergunta):\n"
+                    + "\n\n".join(warnings_list) + "\n"
+                )
 
         user_content = (
             f"SCHEMA DO BANCO:\n{schema_prompt}\n\n"
             f"{domain_rules}\n\n"
             f"EXEMPLOS DE REFERÊNCIA:\n{few_shot}\n"
             f"PERGUNTA: {question}\n"
+            f"{plan_block}"
             f"{repair_block}"
             "SQL:"
         )
@@ -301,6 +433,17 @@ class Text2SQLPipeline:
 
             trace.log_span("schema_linking", tables_selected=selected_tables)
 
+            # Etapa 1b: planejamento CoT (opcional)
+            plan: str | None = None
+            if self._use_planning:
+                try:
+                    plan, plan_tokens = self._generate_plan(question, schema_prompt)
+                    for k in total_tokens:
+                        total_tokens[k] += plan_tokens.get(k, 0)
+                    trace.log_span("planning", plan_preview=plan[:200])
+                except Exception as e:
+                    trace.log_span("planning_error", error=str(e))
+
             sql = ""
             error: str | None = None
             repair_attempts = 0
@@ -311,6 +454,7 @@ class Text2SQLPipeline:
                 messages = self._build_prompt(
                     question, schema_prompt, domain_rules, few_shot,
                     error if attempt > 0 else None,
+                    plan=plan,
                 )
                 try:
                     sql, tokens = self._generate_sql(messages)
@@ -377,6 +521,7 @@ class Text2SQLPipeline:
                     success=True, repair_attempts=repair_attempts,
                     latency_ms=latency, tokens_used=total_tokens,
                     tables_used=tables, schema_tables_selected=selected_tables,
+                    plan=plan,
                 )
                 trace.set_result(
                     success=True, sql=sql, rows_returned=len(rows),
