@@ -7,6 +7,8 @@
 # Arquivos gerados em runtime
 logs/
 reports/
+evaluation/results/results_*.json
+evaluation/results/audit_*.json
 evaluation/results.json
 evaluation/audit_results.json
 

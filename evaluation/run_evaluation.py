@@ -27,7 +27,21 @@ from src.text2sql.pipeline import Text2SQLPipeline
 from src.text2sql.schema_linker import build_schema_index
 
 EVAL_DIR = Path(__file__).resolve().parent
+RESULTS_DIR = EVAL_DIR / "results"
 GT_PATH = EVAL_DIR / "ground_truth.json"
+
+
+def _next_run_index() -> int:
+    """Retorna o próximo índice de run baseado nos arquivos existentes em results/."""
+    RESULTS_DIR.mkdir(exist_ok=True)
+    existing = [p.stem for p in RESULTS_DIR.glob("results_*.json")]
+    indices = []
+    for stem in existing:
+        try:
+            indices.append(int(stem.split("_")[1]))
+        except (IndexError, ValueError):
+            pass
+    return max(indices, default=0) + 1
 
 
 # ---------------------------------------------------------------------------
@@ -137,8 +151,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--difficulty", help="Filtrar por dificuldade (easy/medium/hard)")
     parser.add_argument("--limit", type=int, help="Limitar número de exemplos avaliados")
     parser.add_argument("--no-indexes", action="store_true", help="Usar fallback léxico (sem embeddings)")
-    parser.add_argument("--output", default="results.json", help="Arquivo de saída dos resultados")
-    parser.add_argument("--audit", default="audit_results.json", help="Arquivo de saída do audit")
     return parser.parse_args()
 
 
@@ -146,9 +158,10 @@ def main() -> None:
     args = parse_args()
 
     use_indexes = not args.no_indexes
+    run_idx = _next_run_index()
 
     print("=" * 60)
-    print("EVALUATION — Text-to-SQL Ground Truth (135 exemplos)")
+    print(f"EVALUATION — Text-to-SQL Ground Truth (135 exemplos) — run {run_idx}")
     print(f"Índices semânticos: {'SIM' if use_indexes else 'NÃO (baseline léxico)'}")
     if args.difficulty:
         print(f"Filtro dificuldade: {args.difficulty}")
@@ -191,18 +204,19 @@ def main() -> None:
 
     # 6. Relatório
     results = build_results_json(records)
+    results["run"] = run_idx
     print_terminal_report(records, results)
 
-    # 7. Salva results.json
-    results_path = EVAL_DIR / args.output
+    # 7. Salva evaluation/results/results_{i}.json
+    results_path = RESULTS_DIR / f"results_{run_idx}.json"
     results_path.write_text(
         json.dumps(results, indent=2, ensure_ascii=False),
         encoding="utf-8",
     )
     print(f"\nResultados salvos em: {results_path}")
 
-    # 8. Salva audit_results.json
-    audit_path = EVAL_DIR / args.audit
+    # 8. Salva evaluation/results/audit_{i}.json
+    audit_path = RESULTS_DIR / f"audit_{run_idx}.json"
     write_audit(audit_path, audit_entries)
     print(f"Audit salvo em:       {audit_path}")
 
