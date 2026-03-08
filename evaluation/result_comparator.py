@@ -15,11 +15,11 @@ def normalize_value(v) -> str:
     """
     if isinstance(v, float):
         decimals = 0 if abs(v) >= 1_000_000 else 1
-        return str(round(v, decimals))
+        # Use Decimal(str(v)) to avoid binary float repr issues (e.g. round(6.55, 1)=6.5 not 6.6)
+        return str(round(decimal.Decimal(str(v)), decimals))
     if isinstance(v, decimal.Decimal):
-        f = float(v)
-        decimals = 0 if abs(f) >= 1_000_000 else 1
-        return str(round(f, decimals))
+        decimals = 0 if abs(v) >= 1_000_000 else 1
+        return str(round(v, decimals))
     if isinstance(v, int):
         return str(v)
     if isinstance(v, str):
