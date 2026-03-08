@@ -88,26 +88,30 @@ REGRAS CRÍTICAS — NUNCA IGNORE:
    Quando a pergunta menciona "cidades/municípios que ATENDEM" ou "onde fica o hospital", use MUNIC_MOV.
    Quando exibir município na saída: SEMPRE mostre municipios.nome (nunca retorne o código numérico MUNIC_RES ou MUNIC_MOV).
 
-8. FILTRO GEOGRÁFICO — NÃO adicione filtros de estado/município não pedidos explicitamente.
-   REGRA DE OURO: Se JOIN com municipios é necessário APENAS para mostrar o nome, NÃO adicione WHERE estado.
-   - Pergunta SEM menção a estado/RS/MA/Rio Grande do Sul/Maranhão → SEM WHERE estado. Ponto final.
-   - Pergunta COM "no RS", "no MA", "no Maranhão", "no Rio Grande do Sul" → filtre por estado.
-   ERRADO: SELECT MAX(VAL_TOT) FROM internacoes JOIN municipios ... WHERE estado='RS'  ← não pedido
-   CERTO:  SELECT MAX(VAL_TOT) FROM internacoes
-   ERRADO: SELECT h.CNES, COUNT(*) FROM internacoes JOIN hospital h ... JOIN municipios m ... WHERE m.estado='RS'  ← não pedido
-   CERTO:  SELECT h.CNES, COUNT(*) FROM internacoes JOIN hospital h ... GROUP BY h.CNES
-   AUTO-CHECK OBRIGATÓRIO: antes de escrever o SQL final, leia a pergunta e verifique:
-   "A pergunta menciona explicitamente RS, MA, estado, Rio Grande do Sul ou Maranhão?"
-   Se NÃO → remova qualquer WHERE estado ou WHERE m.estado da query.
+8. FILTRO GEOGRÁFICO — duas regras opostas, ambas obrigatórias:
+   A) Se a pergunta NÃO menciona estado/RS/MA/Rio Grande do Sul/Maranhão → NÃO adicione WHERE estado. Ponto final.
+      ERRADO: SELECT MAX(VAL_TOT) FROM internacoes JOIN municipios ... WHERE estado='RS'  ← não pedido
+      CERTO:  SELECT MAX(VAL_TOT) FROM internacoes
+      ERRADO: SELECT h.CNES, COUNT(*) FROM internacoes JOIN hospital h ... WHERE m.estado='RS'  ← não pedido
+      CERTO:  SELECT h.CNES, COUNT(*) FROM internacoes JOIN hospital h ... GROUP BY h.CNES
+   B) Se a pergunta menciona "MA e RS", "em cada estado", "por estado (MA e RS)" → adicione WHERE mu.estado IN ('MA', 'RS').
+      Isso é necessário porque MUNIC_RES pode conter pacientes de outros estados (AC, SP, etc.) internados em RS/MA.
+      ERRADO: GROUP BY estado sem filtro → retorna AC, SP, MG, etc.
+      CERTO:  JOIN municipios mu ON ... WHERE mu.estado IN ('MA', 'RS') GROUP BY mu.estado
+   AUTO-CHECK: Pergunta menciona RS/MA? Se NÃO → sem WHERE estado. Se SIM (como agrupamento) → WHERE estado IN ('MA','RS').
 
-9. TABELA CID — para buscar descrição de diagnóstico:
-   JOIN: internacoes.DIAG_PRINC = cid.CID (ou CID_MORTE = cid.CID)
-   Coluna de descrição: cid.CD_DESCRICAO  (NÃO existe cid.DESCRICAO — use CD_DESCRICAO)
+9. TABELA CID — colunas DIAG_PRINC, DIAG_SECUN e CID_MORTE contêm CÓDIGOS CID (ex: 'A15', 'J00').
+   NUNCA use ILIKE nessas colunas — elas não contêm nomes de doenças.
+   Para filtrar por NOME de doença: faça JOIN com cid e use cid.CD_DESCRICAO ILIKE '%meningite%'.
+     ERRADO: WHERE DIAG_PRINC ILIKE '%meningite%'  ← DIAG_PRINC é código, não nome!
+     CERTO:  JOIN cid ON internacoes.DIAG_PRINC = cid.CID WHERE cid.CD_DESCRICAO ILIKE '%meningite%'
+   Para filtrar por CATEGORIA CID (prefixo): use LIKE 'J%' (doenças respiratórias = J00-J99).
+     ERRADO: WHERE DIAG_PRINC IN ('J00', 'J01', 'J02', ...)  ← nunca enumere manualmente
+     CERTO:  WHERE DIAG_PRINC LIKE 'J%'
+   Coluna de descrição: cid.CD_DESCRICAO (NÃO existe cid.DESCRICAO).
+   JOIN: internacoes.DIAG_PRINC = cid.CID (ou CID_MORTE = cid.CID).
    Quando a pergunta pede "diagnóstico mais comum", "motivo de internação", "causa de morte"
-   → sempre faça JOIN com cid e retorne cid.CD_DESCRICAO.
-   NUNCA enumere códigos CID manualmente (ex: IN ('A39', 'G00', ...)).
-   Para filtrar por NOME de doença: use cid.CD_DESCRICAO ILIKE '%meningite%'.
-   Ao fazer JOIN com cid, agrupe por cid.CD_DESCRICAO, não por internacoes.DIAG_PRINC.
+   → sempre faça JOIN com cid e retorne cid.CD_DESCRICAO, agrupando por CD_DESCRICAO.
 
 10. PACIENTES INDÍGENAS → use RACA_COR = 5 (NÃO use a coluna ETNIA para isso).
     A coluna ETNIA é específica para subgrupos étnicos indígenas, não para identificar indígenas.
@@ -118,6 +122,10 @@ REGRAS CRÍTICAS — NUNCA IGNORE:
     Nunca retorne apenas o código numérico 1 ou 3 como valor de sexo na saída.
 
 12. 'socioeconomico' é formato long: sempre filtre por metrica (ex: metrica = 'idhm').
+
+12b. VINCPREV (vínculo previdenciário): VINCPREV=0 significa "sem vínculo informado / não informado".
+     Para contar pacientes COM vínculo informado: WHERE VINCPREV IS NOT NULL AND VINCPREV != 0
+     Para contar pacientes SEM vínculo: WHERE VINCPREV IS NULL OR VINCPREV = 0
 
 13. TOP-N por grupo/estado/especialidade: use ROW_NUMBER() OVER (PARTITION BY grupo ORDER BY ...) <= N.
     PALAVRAS-CHAVE que obrigam PARTITION BY: "em cada estado", "por estado", "de cada ano",

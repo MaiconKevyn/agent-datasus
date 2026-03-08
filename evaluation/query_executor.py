@@ -17,6 +17,7 @@ MAX_AUDIT_ROWS = 100
 @dataclass
 class ExecutionResult:
     rows: list[tuple]       # até MAX_AUDIT_ROWS linhas (para audit)
+    all_rows: list[tuple]   # todas as linhas (para comparação subset)
     columns: list[str]
     total_rows: int         # total real retornado pelo banco
     truncated: bool         # True se total_rows > MAX_AUDIT_ROWS
@@ -33,10 +34,10 @@ def execute_sql(sql: str) -> ExecutionResult:
 
         total = len(all_rows)
         truncated = total > MAX_AUDIT_ROWS
-        rows = all_rows[:MAX_AUDIT_ROWS]
 
         return ExecutionResult(
-            rows=rows,
+            rows=all_rows[:MAX_AUDIT_ROWS],
+            all_rows=all_rows,
             columns=columns,
             total_rows=total,
             truncated=truncated,
@@ -45,6 +46,7 @@ def execute_sql(sql: str) -> ExecutionResult:
     except Exception as e:
         return ExecutionResult(
             rows=[],
+            all_rows=[],
             columns=[],
             total_rows=0,
             truncated=False,

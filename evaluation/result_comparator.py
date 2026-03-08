@@ -14,9 +14,12 @@ def normalize_value(v) -> str:
     de precisão entre ROUND(x, 0) e ROUND(x, 2) quando o valor real é o mesmo.
     """
     if isinstance(v, float):
-        return str(round(v, 1))
+        decimals = 0 if abs(v) >= 1_000_000 else 1
+        return str(round(v, decimals))
     if isinstance(v, decimal.Decimal):
-        return str(round(float(v), 1))
+        f = float(v)
+        decimals = 0 if abs(f) >= 1_000_000 else 1
+        return str(round(f, decimals))
     if isinstance(v, int):
         return str(v)
     if isinstance(v, str):

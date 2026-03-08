@@ -81,7 +81,7 @@ def run_evaluation(
     records: list[EvalRecord] = []
     audit_entries: list[dict] = []
 
-    _empty_result = ExecutionResult(rows=[], columns=[], total_rows=0, truncated=False, error=None)
+    _empty_result = ExecutionResult(rows=[], all_rows=[], columns=[], total_rows=0, truncated=False, error=None)
     total = len(gt_entries)
     n_pass = n_fail = n_error = 0
 
@@ -112,7 +112,7 @@ def run_evaluation(
         # 4. Compara GT ⊆ agent
         passed = False
         if not gt_result.error and not agent_result.error and agent_sql:
-            passed = is_subset(gt_result.rows, agent_result.rows)
+            passed = is_subset(gt_result.all_rows, agent_result.all_rows)
 
         # 5. Determina status para o audit
         if gt_result.error or agent_result.error:
