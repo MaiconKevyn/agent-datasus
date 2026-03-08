@@ -1,0 +1,29 @@
+# Ambiente virtual
+.venv/
+
+# Variáveis de ambiente (contém OPENAI_API_KEY e DATABASE_PATH — NUNCA commitar)
+.env
+
+# Arquivos gerados em runtime
+logs/
+reports/
+evaluation/results.json
+evaluation/audit_results.json
+
+# Índices de embeddings (gerados via build_indexes.py — reconstituíveis)
+.vector_store/
+
+# IDE
+.idea/
+.jbeval/
+
+# Claude Code interno
+.claude/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+dist/
+build/

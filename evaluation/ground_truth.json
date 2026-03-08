@@ -1,0 +1,1419 @@
+[
+  {
+    "id": "GT001",
+    "difficulty": "easy",
+    "question": "Quantas internações foram registradas no total?",
+    "query": "SELECT COUNT(*) AS total_internacoes FROM internacoes;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "Main table - 18M+ records"
+  },
+  {
+    "id": "GT002",
+    "difficulty": "easy",
+    "question": "Quantas mortes foram registradas?",
+    "query": "SELECT COUNT(*) AS total_mortes FROM internacoes WHERE \"MORTE\" = true;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "CRITICAL: Use internacoes.MORTE boolean column - mortes table was absorbed into internacoes. Result: ~765k records"
+  },
+  {
+    "id": "GT003",
+    "difficulty": "easy",
+    "question": "Quantos procedimentos diferentes existem cadastrados?",
+    "query": "SELECT COUNT(*) AS total_procedimentos FROM procedimentos;",
+    "tables": [
+      "procedimentos"
+    ],
+    "notes": "CRITICAL: Use procedimentos table, not cid - 5.4k records"
+  },
+  {
+    "id": "GT004",
+    "difficulty": "easy",
+    "question": "Quantos códigos CID-10 estão disponíveis?",
+    "query": "SELECT COUNT(*) AS total_cids FROM cid;",
+    "tables": [
+      "cid"
+    ],
+    "notes": "Reference table only - 14.2k codes. Table was renamed from cid10 to cid"
+  },
+  {
+    "id": "GT005",
+    "difficulty": "easy",
+    "question": "Quantos hospitais estão cadastrados?",
+    "query": "SELECT COUNT(*) AS total_hospitais FROM hospital;",
+    "tables": [
+      "hospital"
+    ],
+    "notes": "Hospital reference data"
+  },
+  {
+    "id": "GT006",
+    "difficulty": "easy",
+    "question": "Quantos municípios têm dados socioeconômicos registrados?",
+    "query": "SELECT COUNT(DISTINCT codigo_6d) AS total_municipios FROM socioeconomico;",
+    "tables": [
+      "socioeconomico"
+    ],
+    "notes": "CRITICAL: Use socioeconomico table (replaces dado_ibge). COUNT DISTINCT on codigo_6d to count municipalities. Result: ~5,570 municipalities"
+  },
+  {
+    "id": "GT007",
+    "difficulty": "easy",
+    "question": "Quantos registros de internação em UTI existem?",
+    "query": "SELECT COUNT(*) AS total_uti FROM internacoes WHERE \"VAL_UTI\" > 0;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "CRITICAL: uti_detalhes table was absorbed into internacoes. Use VAL_UTI > 0 to identify UTI admissions. Result: ~1.1M records"
+  },
+  {
+    "id": "GT008",
+    "difficulty": "easy",
+    "question": "Quantos casos de VDRL positivo foram registrados?",
+    "query": "SELECT COUNT(*) AS total_vdrl FROM internacoes WHERE \"IND_VDRL\" = true;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "CRITICAL: condicoes_especificas table was absorbed. IND_VDRL is a boolean column in internacoes. Result: ~2.45M records"
+  },
+  {
+    "id": "GT009",
+    "difficulty": "easy",
+    "question": "Quantas especialidades médicas estão cadastradas?",
+    "query": "SELECT COUNT(*) AS total_especialidades FROM especialidade;",
+    "tables": [
+      "especialidade"
+    ],
+    "notes": "CRITICAL: cbor table was removed. Use especialidade lookup table. Result: 33 specialties"
+  },
+  {
+    "id": "GT010",
+    "difficulty": "easy",
+    "question": "Quantos casos obstétricos foram registrados?",
+    "query": "SELECT COUNT(*) AS total_obstetricos FROM internacoes WHERE \"ESPEC\" = 2;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "CRITICAL: obstetricos table was absorbed into internacoes. ESPEC = 2 identifies obstetric cases. Result: ~2.89M records"
+  },
+  {
+    "id": "GT011",
+    "difficulty": "medium",
+    "question": "Quantos pacientes têm vínculo previdenciário informado?",
+    "query": "SELECT COUNT(*) AS total_vincprev FROM internacoes WHERE \"VINCPREV\" IS NOT NULL AND \"VINCPREV\" != 0;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "CRITICAL: vincprev is now a lookup table (7 rows). Patient-level VINCPREV data is in internacoes column. Result: ~7,473 records with non-zero VINCPREV"
+  },
+  {
+    "id": "GT012",
+    "difficulty": "medium",
+    "question": "Quantos pacientes têm nível de instrução informado?",
+    "query": "SELECT COUNT(*) AS total_instrucao FROM internacoes WHERE \"INSTRU\" IS NOT NULL AND \"INSTRU\" != 0;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "CRITICAL: instrucao is now a lookup table (12 rows). Patient-level INSTRU data is in internacoes column. Result: ~103,725 records with non-zero INSTRU"
+  },
+  {
+    "id": "GT013",
+    "difficulty": "easy",
+    "question": "Quantos pacientes do sexo masculino foram internados?",
+    "query": "SELECT COUNT(*) AS homens FROM internacoes WHERE \"SEXO\" = 1;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "Gender filtering in main table - SEXO=1 for male"
+  },
+  {
+    "id": "GT014",
+    "difficulty": "medium",
+    "question": "Quantas internações por meningite ocasionaram em morte?",
+    "query": "SELECT COUNT(*) FROM internacoes i JOIN cid c ON i.\"CID_MORTE\" = c.\"CID\" WHERE c.\"CD_DESCRICAO\" ILIKE '%meningite%' AND i.\"MORTE\" = true;",
+    "tables": [
+      "internacoes",
+      "cid"
+    ],
+    "notes": "CRITICAL: mortes table absorbed into internacoes (MORTE boolean + CID_MORTE). cid10 renamed to cid. JOIN internacoes.CID_MORTE → cid.CID. Result: 228"
+  },
+  {
+    "id": "GT015",
+    "difficulty": "easy",
+    "question": "Qual a descrição do código CID A15?",
+    "query": "SELECT \"CD_DESCRICAO\" FROM cid WHERE \"CID\" = 'A15';",
+    "tables": [
+      "cid"
+    ],
+    "notes": "Reference lookup in cid table (renamed from cid10). Result: 'Tuberc respirat c/conf bacteriol e histolog'"
+  },
+  {
+    "id": "GT016",
+    "difficulty": "easy",
+    "question": "Quantos casos de VDRL positivo foram registrados?",
+    "query": "SELECT COUNT(*) AS vdrl_positivo FROM internacoes WHERE \"IND_VDRL\" = true;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "CRITICAL: condicoes_especificas absorbed into internacoes. IND_VDRL is a boolean column. Result: ~2.45M"
+  },
+  {
+    "id": "GT017",
+    "difficulty": "easy",
+    "question": "Qual o tempo médio de permanência hospitalar?",
+    "query": "SELECT AVG(\"DIAS_PERM\") AS tempo_medio_permanencia FROM internacoes;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "CRITICAL: Column renamed from QT_DIARIAS to DIAS_PERM. Result: ~5.35 days"
+  },
+  {
+    "id": "GT018",
+    "difficulty": "medium",
+    "question": "Quantos habitantes tem o município que tem a maior população segundo dados do IBGE?",
+    "query": "SELECT mu.nome AS municipio_maior_populacao, s.valor AS total_habitantes FROM socioeconomico s JOIN municipios mu ON s.codigo_6d = mu.codigo_6d WHERE s.metrica = 'populacao_total' ORDER BY s.valor DESC LIMIT 1;",
+    "tables": [
+      "socioeconomico",
+      "municipios"
+    ],
+    "notes": "CRITICAL: dado_ibge replaced by socioeconomico (long format). MUST filter by metrica = 'populacao_total'. JOIN with municipios for city name. Returns both city name and population count. Result: São Paulo"
+  },
+  {
+    "id": "GT019",
+    "difficulty": "medium",
+    "question": "Quais os cinco municípios com mais internações obstétricas registradas?",
+    "query": "SELECT mu.nome, COUNT(*) AS total_internacoes FROM internacoes i JOIN municipios mu ON i.\"MUNIC_RES\" = mu.codigo_6d WHERE i.\"ESPEC\" = 2 GROUP BY mu.nome ORDER BY total_internacoes DESC LIMIT 5;",
+    "tables": [
+      "internacoes",
+      "municipios"
+    ],
+    "notes": "CRITICAL: obstetricos table absorbed. ESPEC = 2 identifies obstetric cases. Result: São Luís, Porto Alegre, Imperatriz, Pelotas, Canoas"
+  },
+  {
+    "id": "GT020",
+    "difficulty": "easy",
+    "question": "Quantas internações resultaram em óbito?",
+    "query": "SELECT COUNT(*) AS internacoes_com_obito FROM internacoes WHERE \"MORTE\" = true;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "CRITICAL: mortes table absorbed into internacoes. Use MORTE boolean column directly. Result: ~765,627"
+  },
+  {
+    "id": "GT021",
+    "difficulty": "hard",
+    "question": "Quais são os 5 procedimentos mais realizados?",
+    "query": "SELECT p.\"NOME_PROC\" AS procedimento, COUNT(*) AS total FROM atendimentos a JOIN procedimentos p ON a.\"PROC_REA\" = p.\"PROC_REA\" GROUP BY p.\"NOME_PROC\" ORDER BY total DESC LIMIT 5;",
+    "tables": [
+      "atendimentos",
+      "procedimentos"
+    ],
+    "notes": "CRITICAL: PROC_REA removed from internacoes. Use atendimentos junction table (37M+ rows) to link internacoes to procedimentos. Top result: PARTO NORMAL ~3.2M"
+  },
+  {
+    "id": "GT022",
+    "difficulty": "easy",
+    "question": "Quantos hospitais registraram pelo menos uma morte?",
+    "query": "SELECT COUNT(DISTINCT \"CNES\") AS hospitais_com_mortes FROM internacoes WHERE \"MORTE\" = true;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "CRITICAL: mortes table absorbed. Use MORTE boolean in internacoes. Result: 610 hospitals"
+  },
+  {
+    "id": "GT023",
+    "difficulty": "medium",
+    "question": "Quantas internações de UTI resultaram em óbito?",
+    "query": "SELECT COUNT(*) AS uti_com_obito FROM internacoes WHERE \"VAL_UTI\" > 0 AND \"MORTE\" = true;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "CRITICAL: uti_detalhes and mortes tables both absorbed into internacoes. VAL_UTI > 0 = UTI, MORTE = true = death. Result: 266,356"
+  },
+  {
+    "id": "GT024",
+    "difficulty": "medium",
+    "question": "Quais hospitais têm mais de 1000 internações registradas?",
+    "query": "SELECT h.\"CNES\", COUNT(i.\"N_AIH\") AS total_internacoes FROM hospital h JOIN internacoes i ON h.\"CNES\" = i.\"CNES\" GROUP BY h.\"CNES\" HAVING COUNT(i.\"N_AIH\") > 1000 ORDER BY total_internacoes DESC;",
+    "tables": [
+      "hospital",
+      "internacoes"
+    ],
+    "notes": "JOIN: Hospital activity volume"
+  },
+  {
+    "id": "GT025",
+    "difficulty": "medium",
+    "question": "Quantas internações com VDRL positivo resultaram em morte?",
+    "query": "SELECT COUNT(*) AS vdrl_positivo_obito FROM internacoes WHERE \"IND_VDRL\" = true AND \"MORTE\" = true;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "CRITICAL: condicoes_especificas and mortes absorbed. Both IND_VDRL and MORTE are boolean columns in internacoes. Result: 822"
+  },
+  {
+    "id": "GT026",
+    "difficulty": "medium",
+    "question": "Qual o valor médio das internações que resultaram em óbito?",
+    "query": "SELECT AVG(\"VAL_TOT\") AS valor_medio_obitos FROM internacoes WHERE \"MORTE\" = true AND \"VAL_TOT\" IS NOT NULL;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "CRITICAL: mortes table absorbed. Filter directly with MORTE = true. Result: ~R$ 9,361.93"
+  },
+  {
+    "id": "GT027",
+    "difficulty": "medium",
+    "question": "Quantas internações obstétricas foram registradas em UTI?",
+    "query": "SELECT COUNT(*) AS obstetricos_uti FROM internacoes WHERE \"ESPEC\" = 2 AND \"VAL_UTI\" > 0;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "CRITICAL: cbor and uti_detalhes absorbed. ESPEC = 2 = obstetric, VAL_UTI > 0 = UTI. Result: 4,489"
+  },
+  {
+    "id": "GT028",
+    "difficulty": "hard",
+    "question": "Quais sao os 10 municípios com mais de 100 internações com a maior taxa de mortalidade?",
+    "query": "SELECT mu.nome AS municipio, COUNT(*) AS total_internacoes, SUM(CASE WHEN i.\"MORTE\" = true THEN 1 ELSE 0 END) AS total_mortes, ROUND(SUM(CASE WHEN i.\"MORTE\" = true THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS taxa_mortalidade FROM internacoes i JOIN municipios mu ON i.\"MUNIC_RES\" = mu.codigo_6d GROUP BY mu.nome HAVING COUNT(*) > 100 ORDER BY taxa_mortalidade DESC LIMIT 10;",
+    "tables": [
+      "internacoes",
+      "municipios"
+    ],
+    "notes": "CRITICAL: mortes table absorbed. Use MORTE boolean with CASE WHEN for mortality rate calculation. HAVING COUNT(*) > 100 excludes low-volume municipalities. Top: São Bernardo do Campo ~9.82%"
+  },
+  {
+    "id": "GT029",
+    "difficulty": "medium",
+    "question": "Qual é o valor médio de UTI para homens?",
+    "query": "SELECT AVG(\"VAL_UTI\") AS valor_medio_uti_homens FROM internacoes WHERE \"SEXO\" = 1 AND \"VAL_UTI\" > 0;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "CRITICAL: uti_detalhes absorbed into internacoes. Filter VAL_UTI > 0 for UTI records only. Result: ~R$ 8,386.01"
+  },
+  {
+    "id": "GT030",
+    "difficulty": "easy",
+    "question": "Quantas mulheres foram internadas?",
+    "query": "SELECT COUNT(*) AS total_mulheres FROM internacoes WHERE \"SEXO\" = 3;",
+    "tables": [
+      "internacoes"
+    ]
+  },
+  {
+    "id": "GT031",
+    "difficulty": "easy",
+    "question": "Qual a latitude e longitude de Porto Alegre?",
+    "query": "SELECT latitude, longitude FROM municipios WHERE nome = 'Porto Alegre';",
+    "tables": [
+      "municipios"
+    ]
+  },
+  {
+    "id": "GT032",
+    "difficulty": "easy",
+    "question": "Quantos municípios estão no estado do RS?",
+    "query": "SELECT COUNT(*) AS municipios_rs FROM municipios WHERE estado = 'RS';",
+    "tables": [
+      "municipios"
+    ]
+  },
+  {
+    "id": "GT033",
+    "difficulty": "easy",
+    "question": "Qual a idade média dos pacientes internados?",
+    "query": "SELECT AVG(\"IDADE\") AS idade_media FROM internacoes WHERE \"IDADE\" IS NOT NULL;",
+    "tables": [
+      "internacoes"
+    ]
+  },
+  {
+    "id": "GT034",
+    "difficulty": "easy",
+    "question": "Quantas internações duraram mais de 30 dias?",
+    "query": "SELECT COUNT(*) FROM internacoes WHERE \"DIAS_PERM\" > 30;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "CRITICAL: Column renamed from QT_DIARIAS to DIAS_PERM. Result: ~313,285"
+  },
+  {
+    "id": "GT035",
+    "difficulty": "medium",
+    "question": "Qual o diagnóstico mais comum nas internações?",
+    "query": "SELECT c.\"CD_DESCRICAO\" AS diagnostico, COUNT(*) AS total FROM internacoes i JOIN cid c ON i.\"DIAG_PRINC\" = c.\"CID\" WHERE i.\"DIAG_PRINC\" IS NOT NULL GROUP BY c.\"CD_DESCRICAO\" ORDER BY total DESC LIMIT 1;",
+    "tables": [
+      "internacoes",
+      "cid"
+    ],
+    "notes": "JOIN with cid (renamed from cid10) to return human-readable diagnosis name. Result: 'Parto espontaneo cefalico' ~984,336"
+  },
+  {
+    "id": "GT036",
+    "difficulty": "medium",
+    "question": "Quantas internações ocorreram em 2015?",
+    "query": "SELECT COUNT(*) AS internacoes_2015 FROM internacoes WHERE EXTRACT(YEAR FROM \"DT_INTER\") = 2015;",
+    "tables": [
+      "internacoes"
+    ]
+  },
+  {
+    "id": "GT037",
+    "difficulty": "medium",
+    "question": "Quantos pacientes nasceram antes de 1950?",
+    "query": "SELECT COUNT(*) AS nascidos_antes_1950 FROM internacoes WHERE EXTRACT(YEAR FROM \"NASC\") < 1950;",
+    "tables": [
+      "internacoes"
+    ]
+  },
+  {
+    "id": "GT038",
+    "difficulty": "medium",
+    "question": "Qual município teve o maior número de internações masculinas em 2020?",
+    "query": "SELECT mu.nome, COUNT(i.\"N_AIH\") AS total_internacoes FROM internacoes i JOIN municipios mu ON i.\"MUNIC_RES\" = mu.codigo_6d WHERE EXTRACT(YEAR FROM i.\"DT_INTER\") = 2020 AND i.\"SEXO\" = 1 GROUP BY mu.nome ORDER BY total_internacoes DESC LIMIT 1;",
+    "tables": [
+      "municipios",
+      "internacoes"
+    ]
+  },
+  {
+    "id": "GT039",
+    "difficulty": "medium",
+    "question": "Quais são as três causas de morte mais frequentes entre mulheres?",
+    "query": "SELECT c.\"CD_DESCRICAO\", COUNT(*) AS total_mortes FROM internacoes i JOIN cid c ON i.\"CID_MORTE\" = c.\"CID\" WHERE i.\"SEXO\" = 3 AND i.\"MORTE\" = true AND i.\"CID_MORTE\" IS NOT NULL GROUP BY c.\"CD_DESCRICAO\" ORDER BY total_mortes DESC LIMIT 3;",
+    "tables": [
+      "internacoes",
+      "cid"
+    ],
+    "notes": "CRITICAL: mortes table absorbed, cid10 renamed to cid. Use internacoes.CID_MORTE for death cause. JOIN cid for descriptions. Result: 'Nao preenchido', 'Insuf respirat aguda', 'Septicemia NE'"
+  },
+  {
+    "id": "GT040",
+    "difficulty": "easy",
+    "question": "Qual a taxa de mortalidade infantil média no Brasil?",
+    "query": "SELECT AVG(valor) AS taxa_media_mortalidade_infantil FROM socioeconomico WHERE metrica = 'mortalidade_infantil_1ano';",
+    "tables": [
+      "socioeconomico"
+    ],
+    "notes": "CRITICAL: dado_ibge replaced by socioeconomico (long format). MUST filter by metrica = 'mortalidade_infantil_1ano'. Result: ~19.23"
+  },
+  {
+    "id": "GT041",
+    "difficulty": "medium",
+    "question": "Quantos hospitais atenderam casos de UTI em 2020?",
+    "query": "SELECT COUNT(DISTINCT \"CNES\") FROM internacoes WHERE \"VAL_UTI\" > 0 AND EXTRACT(YEAR FROM \"DT_INTER\") = 2020;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "CRITICAL: uti_detalhes absorbed. VAL_UTI > 0 identifies UTI admissions. Result: 129 hospitals in 2020"
+  },
+  {
+    "id": "GT042",
+    "difficulty": "medium",
+    "question": "Quantas internações de pacientes com mais de 70 anos ocorreram no inverno (junho a agosto)?",
+    "query": "SELECT COUNT(i.\"N_AIH\") FROM internacoes i WHERE EXTRACT(MONTH FROM i.\"DT_INTER\") BETWEEN 6 AND 8 AND i.\"IDADE\" > 70;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "No extra JOINs needed - all filters available in internacoes. Result: ~710,298"
+  },
+  {
+    "id": "GT043",
+    "difficulty": "medium",
+    "question": "Quantas internações tiveram tanto diagnóstico principal quanto secundário?",
+    "query": "SELECT COUNT(*) AS com_ambos_diagnosticos FROM internacoes WHERE \"DIAG_PRINC\" IS NOT NULL AND \"DIAG_SECUN\" IS NOT NULL;",
+    "tables": [
+      "internacoes"
+    ]
+  },
+  {
+    "id": "GT044",
+    "difficulty": "hard",
+    "question": "Qual o custo médio de UTI por faixa etária dos pacientes?",
+    "query": "SELECT CASE WHEN \"IDADE\" < 18 THEN 'Menor' WHEN \"IDADE\" < 60 THEN 'Adulto' ELSE 'Idoso' END AS faixa_etaria, AVG(\"VAL_UTI\") AS custo_medio_uti FROM internacoes WHERE \"VAL_UTI\" > 0 GROUP BY CASE WHEN \"IDADE\" < 18 THEN 'Menor' WHEN \"IDADE\" < 60 THEN 'Adulto' ELSE 'Idoso' END;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "CRITICAL: uti_detalhes absorbed. VAL_UTI column is in internacoes directly. Filter VAL_UTI > 0 for UTI records only. Result: Menor ~10625.78, Adulto ~7756.06, Idoso ~7628.91"
+  },
+  {
+    "id": "GT045",
+    "difficulty": "medium",
+    "question": "Quantos casos tiveram VDRL positivo e evoluíram para óbito?",
+    "query": "SELECT COUNT(*) AS vdrl_positivo_obito FROM internacoes WHERE \"IND_VDRL\" = true AND \"MORTE\" = true;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "CRITICAL: condicoes_especificas and mortes both absorbed into internacoes. Both are boolean columns. Result: 822"
+  },
+  {
+    "id": "GT046",
+    "difficulty": "medium",
+    "question": "Qual a evolução de internações para cada ano?",
+    "query": "SELECT EXTRACT(YEAR FROM \"DT_INTER\") AS ano, COUNT(*) AS total_internacoes FROM internacoes WHERE \"DT_INTER\" IS NOT NULL GROUP BY ano ORDER BY ano;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "Temporal trend analysis - important for healthcare planning"
+  },
+  {
+    "id": "GT047",
+    "difficulty": "medium",
+    "question": "Quantas internações por doença respiratória ocorrem no inverno (junho a agosto)?",
+    "query": "SELECT COUNT(*) AS internacoes_respiratorias_inverno FROM internacoes WHERE \"DIAG_PRINC\" LIKE 'J%' AND EXTRACT(MONTH FROM \"DT_INTER\") IN (6, 7, 8);",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "Seasonal analysis - respiratory diseases peak in winter (Southern Hemisphere)"
+  },
+  {
+    "id": "GT048",
+    "difficulty": "medium",
+    "question": "Quais são as 10 principais causas de morte (com descrição)?",
+    "query": "SELECT c.\"CD_DESCRICAO\", COUNT(*) AS total_mortes FROM internacoes i JOIN cid c ON i.\"CID_MORTE\" = c.\"CID\" WHERE i.\"MORTE\" = true GROUP BY c.\"CD_DESCRICAO\" ORDER BY total_mortes DESC LIMIT 10;",
+    "tables": [
+      "internacoes",
+      "cid"
+    ],
+    "notes": "CRITICAL: mortes table absorbed, cid10 renamed to cid. JOIN internacoes.CID_MORTE → cid.CID. Filter MORTE = true. Question says 'com descrição' not 'com código' → only CD_DESCRICAO in SELECT. Top result: 'Nao preenchido' ~488,332"
+  },
+  {
+    "id": "GT049",
+    "difficulty": "hard",
+    "question": "Qual a taxa de mortalidade no estado do Rio Grande do Sul em 2021?",
+    "query": "  SELECT COUNT(*) AS total_internacoes, SUM(CASE WHEN \"MORTE\" = true THEN 1 ELSE 0 END) AS total_mortes, ROUND(SUM(CASE WHEN \"MORTE\" = true THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS taxa_mortalidade FROM internacoes i JOIN municipios mu ON i.\"MUNIC_RES\" = mu.codigo_6d WHERE mu.estado = 'RS' AND EXTRACT(YEAR FROM \"DT_INTER\") = 2021;",
+    "tables": [
+      "internacoes",
+      "municipios"
+    ],
+    "notes": "CRITICAL: mortes table absorbed, dado_ibge removed. Filter state via municipios.estado = 'RS'. Use MORTE boolean with CASE WHEN for rate. Result: ~7.84%"
+  },
+  {
+    "id": "GT050",
+    "difficulty": "medium",
+    "question": "Qual a taxa de mortalidade para faixa etária 30-45?",
+    "query": "SELECT '30-45 anos' AS faixa_etaria, COUNT(*) AS total_internacoes, SUM(CASE WHEN \"MORTE\" = true THEN 1 ELSE 0 END) AS total_mortes, ROUND(SUM(CASE WHEN \"MORTE\" = true THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS taxa_mortalidade FROM internacoes WHERE \"IDADE\" BETWEEN 30 AND 45;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "CRITICAL: mortes table absorbed. Use MORTE boolean directly in internacoes. Label '30 a 45 anos' is standard agent output. Result: ~1.64%"
+  },
+  {
+    "id": "GT051",
+    "difficulty": "medium",
+    "question": "Quais são os 10 municípios com mais internações?",
+    "query": "SELECT m.nome AS municipio, COUNT(i.\"N_AIH\") AS total_internacoes FROM internacoes i JOIN municipios m ON i.\"MUNIC_RES\" = m.codigo_6d GROUP BY m.nome ORDER BY total_internacoes DESC LIMIT 10;",
+    "tables": [
+      "internacoes",
+      "municipios"
+    ],
+    "notes": "JOIN: Regional equity analysis - infrastructure planning"
+  },
+  {
+    "id": "GT052",
+    "difficulty": "easy",
+    "question": "Quantos códigos CID-10 distintos existem?",
+    "query": "SELECT COUNT(DISTINCT \"CID\") FROM cid;",
+    "tables": [
+      "cid"
+    ],
+    "notes": "CRITICAL: cid10 table renamed to cid. Result: 14,262 distinct codes"
+  },
+  {
+    "id": "GT053",
+    "difficulty": "easy",
+    "question": "Qual o valor total gasto em internações?",
+    "query": "SELECT ROUND(SUM(\"VAL_TOT\"), 0) AS total_gasto FROM internacoes;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "Simple aggregation - total healthcare expenditure. ROUND to 0 prevents DuckDB parallel-SUM floating-point drift (~0.01 on 52B total)."
+  },
+  {
+    "id": "GT054",
+    "difficulty": "easy",
+    "question": "Qual o maior valor de internação registrado?",
+    "query": "SELECT MAX(\"VAL_TOT\") FROM internacoes;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "Simple aggregation - maximum cost"
+  },
+  {
+    "id": "GT055",
+    "difficulty": "easy",
+    "question": "Quantos registros de raça/cor estão cadastrados?",
+    "query": "SELECT COUNT(*) FROM internacoes WHERE \"RACA_COR\" IS NOT NULL;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "Simple filtering - records with race/ethnicity data"
+  },
+  {
+    "id": "GT056",
+    "difficulty": "medium",
+    "question": "Quantas internações ocorreram em 2020?",
+    "query": "SELECT COUNT(*) FROM internacoes WHERE EXTRACT(YEAR FROM \"DT_INTER\") = 2020;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "Simple temporal filtering - year 2020"
+  },
+  {
+    "id": "GT057",
+    "difficulty": "easy",
+    "question": "Qual a menor idade registrada nas internações?",
+    "query": "SELECT MIN(\"IDADE\") FROM internacoes;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "Simple aggregation - minimum age"
+  },
+  {
+    "id": "GT058",
+    "difficulty": "easy",
+    "question": "Qual o total de dias de internação registrados?",
+    "query": "SELECT SUM(\"DIAS_PERM\") FROM internacoes;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "CRITICAL: Column renamed from QT_DIARIAS to DIAS_PERM. Result: ~99,105,732 days"
+  },
+  {
+    "id": "GT059",
+    "difficulty": "easy",
+    "question": "Qual a maior idade registrada nas internações?",
+    "query": "SELECT MAX(\"IDADE\") FROM internacoes;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "Simple aggregation - maximum age"
+  },
+  {
+    "id": "GT060",
+    "difficulty": "easy",
+    "question": "Qual a média de valor gasto por internação?",
+    "query": "SELECT AVG(\"VAL_TOT\") AS media_valor_internacao FROM internacoes;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "Simple aggregation - average total cost per admission. Result: ~R$ 2,860.14"
+  },
+  {
+    "id": "GT061",
+    "difficulty": "medium",
+    "question": "Qual a distribuição por idade nas internações?",
+    "query": "SELECT \"IDADE\", COUNT(*) AS total_internacoes FROM internacoes GROUP BY \"IDADE\" ORDER BY total_internacoes DESC;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "Distribution of admissions by age. No LIMIT — question asks for full distribution. Top result: age 0 with ~861k records"
+  },
+  {
+    "id": "GT062",
+    "difficulty": "easy",
+    "question": "Qual a média de valor de serviço hospitalar por paciente?",
+    "query": "SELECT AVG(\"VAL_SH\") AS media_valor FROM internacoes WHERE \"VAL_SH\" IS NOT NULL;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "Average hospital service value (VAL_SH). Result: ~R$ 1,912.34"
+  },
+  {
+    "id": "GT063",
+    "difficulty": "medium",
+    "question": "Qual a média de dias internados por idade?",
+    "query": "SELECT \"IDADE\", AVG(\"DIAS_PERM\") AS media_dias_internados FROM internacoes GROUP BY \"IDADE\" ORDER BY media_dias_internados DESC;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "Average length of stay grouped by patient age. CRITICAL: use DIAS_PERM (renamed from QT_DIARIAS)"
+  },
+  {
+    "id": "GT064",
+    "difficulty": "easy",
+    "question": "Quantas internações com idade acima de 60 anos?",
+    "query": "SELECT COUNT(*) AS total_internacoes FROM internacoes WHERE \"IDADE\" > 60;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "Simple age filter. Result: ~4,791,849"
+  },
+  {
+    "id": "GT065",
+    "difficulty": "medium",
+    "question": "Qual o nível de instrução dos pacientes internados?",
+    "query": "  SELECT ins.\"DESCRICAO\", COUNT(*) AS total FROM internacoes i JOIN instrucao ins ON i.\"INSTRU\" = ins.\"INSTRU\" WHERE i.\"INSTRU\" IS NOT NULL AND i.\"INSTRU\" != 0 GROUP BY ins.\"INSTRU\", ins.\"DESCRICAO\" ORDER BY total DESC;\n",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "CRITICAL: INSTRU is a numeric code in internacoes (not a JOIN to instrucao lookup). 0=Sem info (majority). For human-readable labels JOIN instrucao table."
+  },
+  {
+    "id": "GT066",
+    "difficulty": "medium",
+    "question": "Qual o total de internações por ano?",
+    "query": "SELECT EXTRACT(YEAR FROM \"DT_INTER\") AS ano, COUNT(*) AS total_internacoes FROM internacoes GROUP BY ano ORDER BY total_internacoes DESC;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "Ordered by volume (peak years first). Top year: 2022 with ~1,247,704. See also GT050 for chronological ordering."
+  },
+  {
+    "id": "GT067",
+    "difficulty": "medium",
+    "question": "Qual a quantidade de internações por especialidade?",
+    "query": "SELECT e.\"DESCRICAO\" AS especialidade, COUNT(*) AS total_consultas FROM internacoes i JOIN especialidade e ON i.\"ESPEC\" = e.\"ESPEC\" GROUP BY e.\"DESCRICAO\" ORDER BY total_consultas DESC;",
+    "tables": [
+      "internacoes",
+      "especialidade"
+    ],
+    "notes": "JOIN with especialidade lookup. No LIMIT — question asks for all specialties. Top: CLINICOS ~7.4M, CIRURGICO ~5.6M, OBSTETRICOS ~2.9M"
+  },
+  {
+    "id": "GT068",
+    "difficulty": "medium",
+    "question": "Quais são os 10 procedimentos mais comuns?",
+    "query": "SELECT p.\"NOME_PROC\", COUNT(a.\"id_atendimento\") AS total_atendimentos FROM atendimentos a JOIN procedimentos p ON a.\"PROC_REA\" = p.\"PROC_REA\" GROUP BY p.\"NOME_PROC\" ORDER BY total_atendimentos DESC LIMIT 10;",
+    "tables": [
+      "atendimentos",
+      "procedimentos"
+    ],
+    "notes": "CRITICAL: PROC_REA removed from internacoes — must use atendimentos junction table. Top: PARTO NORMAL ~3.2M. See also GT021 (LIMIT 5)."
+  },
+  {
+    "id": "GT069",
+    "difficulty": "medium",
+    "question": "Quais são os 10 principais CIDs de entrada nas internações?",
+    "query": "SELECT c.\"CD_DESCRICAO\", COUNT(*) AS total_internacoes FROM internacoes i JOIN cid c ON i.\"DIAG_PRINC\" = c.\"CID\" GROUP BY c.\"CD_DESCRICAO\" ORDER BY total_internacoes DESC LIMIT 10;",
+    "tables": [
+      "internacoes",
+      "cid"
+    ],
+    "notes": "cid10 renamed to cid. JOIN on DIAG_PRINC. LIMIT 10 (explicit top-10 in question). Description only (no CID code requested). Top: Parto espontaneo cefalico ~982k"
+  },
+  {
+    "id": "GT070",
+    "difficulty": "medium",
+    "question": "Quais os 10 motivos mais comuns de internação para pacientes indígenas?",
+    "query": "SELECT c.\"CD_DESCRICAO\", COUNT(*) AS total_internacoes FROM internacoes i JOIN cid c ON i.\"DIAG_PRINC\" = c.\"CID\" WHERE i.\"RACA_COR\" = 5 GROUP BY c.\"CD_DESCRICAO\" ORDER BY total_internacoes DESC LIMIT 10;",
+    "tables": [
+      "internacoes",
+      "cid"
+    ],
+    "notes": "RACA_COR = 5 filters indigenous patients. 'motivos mais comuns' = description only (no explicit CID code request). LIMIT 10. Top: Parto espontaneo cefalico ~7,668"
+  },
+  {
+    "id": "GT071",
+    "difficulty": "medium",
+    "question": "Qual é a raça que apresenta maior número de mortes registradas?",
+    "query": "SELECT r.\"DESCRICAO\" AS descricao_raca_cor, COUNT(i.\"N_AIH\") AS total_mortes FROM internacoes i JOIN raca_cor r ON i.\"RACA_COR\" = r.\"RACA_COR\" WHERE i.\"MORTE\" = true GROUP BY r.\"DESCRICAO\" ORDER BY total_mortes DESC LIMIT 1;",
+    "tables": [
+      "internacoes",
+      "raca_cor"
+    ],
+    "notes": "MORTE boolean filter. Singular 'qual a raça' → LIMIT 1. Top: BRANCA ~457,750 mortes"
+  },
+  {
+    "id": "GT072",
+    "difficulty": "medium",
+    "question": "Qual o total de internações para o estado do Maranhão e para o estado do Rio Grande do Sul?",
+    "query": "SELECT m.estado, COUNT(i.\"N_AIH\") AS total_internacoes FROM internacoes i JOIN municipios m ON i.\"MUNIC_RES\" = m.codigo_6d WHERE m.estado IN ('MA', 'RS') GROUP BY m.estado;",
+    "tables": [
+      "internacoes",
+      "municipios"
+    ],
+    "notes": "Result: RS ~11,759,695 / MA ~6,609,160. RS dominates due to database origin (SIH-RS coverage)."
+  },
+  {
+    "id": "GT073",
+    "difficulty": "medium",
+    "question": "Qual o total de benefício Bolsa Família que o estado do MA e RS recebem?",
+    "query": "SELECT m.estado, SUM(s.valor) AS total_bolsa_familia FROM socioeconomico s JOIN municipios m ON s.codigo_6d = m.codigo_6d WHERE s.metrica = 'bolsa_familia_total' AND m.estado IN ('MA', 'RS') GROUP BY m.estado;",
+    "tables": [
+      "socioeconomico",
+      "municipios"
+    ],
+    "notes": "CRITICAL: use socioeconomico with metrica = 'bolsa_familia_total'. Result: MA ~R$3.06B / RS ~R$1.24B"
+  },
+  {
+    "id": "GT074",
+    "difficulty": "medium",
+    "question": "Qual o total de esgotamento sanitário nos estados do MA e RS?",
+    "query": "SELECT m.estado, SUM(s.valor) AS total_taxa_esgotamento FROM socioeconomico s JOIN municipios m ON s.codigo_6d = m.codigo_6d WHERE s.metrica = 'esgotamento_sanitario_domicilio' AND m.estado IN ('MA', 'RS') GROUP BY m.estado;",
+    "tables": [
+      "socioeconomico",
+      "municipios"
+    ],
+    "notes": "CRITICAL: metrica = 'esgotamento_sanitario_domicilio'. Result: RS ~55,560 / MA ~8,217 (RS much higher sanitation coverage)"
+  },
+  {
+    "id": "GT075",
+    "difficulty": "medium",
+    "question": "Quantas mortes foram registradas em cada um dos estados MA e no RS?",
+    "query": "SELECT mu.estado, COUNT(*) AS total_mortes FROM internacoes i JOIN municipios mu ON i.\"MUNIC_RES\" = mu.codigo_6d WHERE i.\"MORTE\" = true AND mu.estado IN ('MA', 'RS') GROUP BY mu.estado ORDER BY total_mortes DESC;",
+    "tables": [
+      "internacoes",
+      "municipios"
+    ],
+    "notes": "CRITICAL: 'nos estados X e Y' → GROUP BY estado to return per-state breakdown. Result: RS ~608,450 / MA ~152,427."
+  },
+  {
+    "id": "GT076",
+    "difficulty": "hard",
+    "question": "Quais são os 10 municípios que atendem mais pacientes?",
+    "query": "SELECT m.nome AS municipio, COUNT(i.\"N_AIH\") AS total_internacoes FROM internacoes i JOIN hospital h ON i.\"CNES\" = h.\"CNES\" JOIN municipios m ON h.\"MUNIC_MOV\" = m.codigo_6d GROUP BY m.nome ORDER BY total_internacoes DESC LIMIT 10;",
+    "tables": [
+      "internacoes",
+      "hospital",
+      "municipios"
+    ],
+    "notes": "JOIN via hospital.MUNIC_MOV (hospital location), NOT MUNIC_RES (patient residence). See GT055 for patient residence version. Top: Porto Alegre ~2,748,298"
+  },
+  {
+    "id": "GT077",
+    "difficulty": "medium",
+    "question": "Qual a média de dias de internação por município?",
+    "query": "SELECT mu.nome AS municipio, AVG(i.\"DIAS_PERM\") AS media_dias_internacao FROM internacoes i JOIN municipios mu ON i.\"MUNIC_RES\" = mu.codigo_6d GROUP BY mu.nome ORDER BY media_dias_internacao DESC;",
+    "tables": [
+      "internacoes",
+      "municipios"
+    ],
+    "notes": "CRITICAL: use DIAS_PERM (renamed from QT_DIARIAS). Use MUNIC_RES (patient residence) for 'por município' without explicit hospital context. Groups by patient's home municipality."
+  },
+  {
+    "id": "GT078",
+    "difficulty": "hard",
+    "question": "Quais são os 10 principais motivos de internação para pacientes com menos de 18 anos, entre 18 e 64 anos, e acima de 64 anos?",
+    "query": "SELECT faixa_etaria, \"CD_DESCRICAO\", total_internacoes FROM (SELECT CASE WHEN i.\"IDADE\" < 18 THEN 'Menor de 18' WHEN i.\"IDADE\" BETWEEN 18 AND 64 THEN '18 a 64' ELSE '65 ou mais' END AS faixa_etaria, c.\"CD_DESCRICAO\", COUNT(*) AS total_internacoes, ROW_NUMBER() OVER (PARTITION BY CASE WHEN i.\"IDADE\" < 18 THEN 'Menor de 18' WHEN i.\"IDADE\" BETWEEN 18 AND 64 THEN '18 a 64' ELSE '65 ou mais' END ORDER BY COUNT(*) DESC) AS rn FROM internacoes i JOIN cid c ON i.\"DIAG_PRINC\" = c.\"CID\" GROUP BY faixa_etaria, c.\"CD_DESCRICAO\") subquery WHERE rn <= 10 ORDER BY faixa_etaria, rn;",
+    "tables": [
+      "internacoes",
+      "cid"
+    ],
+    "notes": "HARD: ROW_NUMBER() OVER (PARTITION BY faixa_etaria ORDER BY COUNT(*) DESC) rn<=10 → 30 rows total (10 per group). Groups: 'Menor de 18' / '18 a 64' / '65 ou mais'. Top-1 per group: <18=J189 Pneumonia NE (155,932); 18-64=O800 Parto espontaneo cefalico (861,909); 65+=J189 Pneumonia NE (149,221)."
+  },
+  {
+    "id": "GT079",
+    "difficulty": "hard",
+    "question": "Quais são os 10 procedimentos mais comuns nas cidades do RS?",
+    "query": "SELECT p.\"NOME_PROC\" AS procedimento, COUNT(a.\"N_AIH\") AS total_procedimentos FROM atendimentos a JOIN procedimentos p ON a.\"PROC_REA\" = p.\"PROC_REA\" JOIN internacoes i ON a.\"N_AIH\" = i.\"N_AIH\" JOIN hospital h ON i.\"CNES\" = h.\"CNES\" JOIN municipios m ON h.\"MUNIC_MOV\" = m.codigo_6d WHERE m.estado = 'RS' GROUP BY p.\"NOME_PROC\" ORDER BY total_procedimentos DESC LIMIT 10;",
+    "tables": [
+      "atendimentos",
+      "procedimentos",
+      "internacoes",
+      "hospital",
+      "municipios"
+    ],
+    "notes": "5-table join. GROUP BY only NOME_PROC (top-10 global procedures in RS). Filter by hospital state via MUNIC_MOV. Top: TRATAMENTO DE PNEUMONIAS / PARTO NORMAL"
+  },
+  {
+    "id": "GT080",
+    "difficulty": "medium",
+    "question": "Quantas mortes foram registradas no estado do RS?",
+    "query": "SELECT COUNT(*) AS total_mortes FROM internacoes i JOIN municipios mu ON i.\"MUNIC_RES\" = mu.codigo_6d WHERE i.\"MORTE\" = true AND mu.estado = 'RS';",
+    "tables": [
+      "internacoes",
+      "municipios"
+    ],
+    "notes": "CRITICAL: deaths are stored in internacoes.MORTE. State filter must use municipios.estado via internacoes.MUNIC_RES. Single-state question returns one total, not GROUP BY."
+  },
+  {
+    "id": "GT081",
+    "difficulty": "hard",
+    "question": "Quais são os 5 procedimentos mais realizados para cada sexo?",
+    "query": "SELECT faixa_sexo, \"NOME_PROC\", total FROM (SELECT CASE WHEN i.\"SEXO\" = 1 THEN 'Masculino' ELSE 'Feminino' END AS faixa_sexo, p.\"NOME_PROC\", COUNT(*) AS total, ROW_NUMBER() OVER (PARTITION BY i.\"SEXO\" ORDER BY COUNT(*) DESC) AS rn FROM atendimentos a JOIN procedimentos p ON a.\"PROC_REA\" = p.\"PROC_REA\" JOIN internacoes i ON a.\"N_AIH\" = i.\"N_AIH\" GROUP BY i.\"SEXO\", p.\"NOME_PROC\") sub WHERE rn <= 5 ORDER BY faixa_sexo, rn;",
+    "tables": [
+      "atendimentos",
+      "procedimentos",
+      "internacoes"
+    ],
+    "notes": "HARD: ROW_NUMBER() OVER (PARTITION BY SEXO) + non-obvious atendimentos junction. CASE WHEN for sex labels. Top Feminino: PARTO NORMAL 3.19M; Top Masculino: TRATAMENTO DE PNEUMONIAS 1.23M."
+  },
+  {
+    "id": "GT082",
+    "difficulty": "hard",
+    "question": "Quais são os 3 diagnósticos principais mais comuns entre pacientes com mais de 60 anos no estado de MS e no estado do RS?",
+    "query": "SELECT estado, \"CD_DESCRICAO\", total FROM (SELECT mu.estado, c.\"CD_DESCRICAO\", COUNT(*) AS total, ROW_NUMBER() OVER (PARTITION BY mu.estado ORDER BY COUNT(*) DESC) AS rn FROM internacoes i JOIN municipios mu ON i.\"MUNIC_RES\" = mu.codigo_6d JOIN cid c ON i.\"DIAG_PRINC\" = c.\"CID\" WHERE i.\"IDADE\" > 60 AND mu.estado IN ('MA', 'RS') GROUP BY mu.estado, c.\"CD_DESCRICAO\") sub WHERE rn <= 3 ORDER BY estado, rn;",
+    "tables": [
+      "internacoes",
+      "municipios",
+      "cid"
+    ],
+    "notes": "HARD: ROW_NUMBER() OVER (PARTITION BY estado) + 2 JOINs (municipios + cid) + age filter. MA top: Hipertensao essencial 62773; RS top: Pneumonia NE ~149k."
+  },
+  {
+    "id": "GT083",
+    "difficulty": "hard",
+    "question": "Qual é a taxa de mortalidade por nível de instrução no estado do RS, considerando apenas grupos com mais de 1000 internações?",
+    "query": "SELECT ins.\"DESCRICAO\", COUNT(*) AS total_internacoes, SUM(CASE WHEN i.\"MORTE\" = true THEN 1 ELSE 0 END) AS total_mortes, ROUND(SUM(CASE WHEN i.\"MORTE\" = true THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS taxa_mortalidade FROM internacoes i JOIN instrucao ins ON i.\"INSTRU\" = ins.\"INSTRU\" JOIN municipios mu ON i.\"MUNIC_RES\" = mu.codigo_6d WHERE mu.estado = 'RS' AND i.\"INSTRU\" IS NOT NULL AND i.\"INSTRU\" != 0 GROUP BY ins.\"DESCRICAO\" HAVING COUNT(*) > 1000 ORDER BY taxa_mortalidade DESC;",
+    "tables": [
+      "internacoes",
+      "instrucao",
+      "municipios"
+    ],
+    "notes": "HARD: computed CASE WHEN mortality rate + 2 JOINs (instrucao + municipios) + HAVING threshold + estado filter. Returns 4 education groups with INSTRU data in RS."
+  },
+  {
+    "id": "GT084",
+    "difficulty": "hard",
+    "question": "Quais são os 3 procedimentos mais comuns entre internações que resultaram em óbito para cada faixa etária: menor de 18, 18 a 64, e 65 ou mais?",
+    "query": "SELECT faixa_etaria, \"NOME_PROC\", total FROM (SELECT CASE WHEN i.\"IDADE\" < 18 THEN 'Menor de 18' WHEN i.\"IDADE\" BETWEEN 18 AND 64 THEN '18 a 64' ELSE '65 ou mais' END AS faixa_etaria, p.\"NOME_PROC\", COUNT(*) AS total, ROW_NUMBER() OVER (PARTITION BY CASE WHEN i.\"IDADE\" < 18 THEN 'Menor de 18' WHEN i.\"IDADE\" BETWEEN 18 AND 64 THEN '18 a 64' ELSE '65 ou mais' END ORDER BY COUNT(*) DESC) AS rn FROM atendimentos a JOIN procedimentos p ON a.\"PROC_REA\" = p.\"PROC_REA\" JOIN internacoes i ON a.\"N_AIH\" = i.\"N_AIH\" WHERE i.\"MORTE\" = true GROUP BY faixa_etaria, p.\"NOME_PROC\") sub WHERE rn <= 3 ORDER BY faixa_etaria, rn;",
+    "tables": [
+      "atendimentos",
+      "procedimentos",
+      "internacoes"
+    ],
+    "notes": "HARD: ROW_NUMBER() OVER (PARTITION BY faixa_etaria) + non-obvious atendimentos junction + MORTE filter + CASE WHEN labels matching question wording. Returns 9 rows (3 per group)."
+  },
+  {
+    "id": "GT085",
+    "difficulty": "hard",
+    "question": "Qual a taxa de mortalidade hospitalar por especialidade médica?",
+    "query": "SELECT e.\"DESCRICAO\" AS especialidade, COUNT(*) AS total_internacoes, SUM(CASE WHEN i.\"MORTE\" = true THEN 1 ELSE 0 END) AS total_mortes, ROUND(SUM(CASE WHEN i.\"MORTE\" = true THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS taxa_mortalidade FROM internacoes i JOIN especialidade e ON i.\"ESPEC\" = e.\"ESPEC\" GROUP BY e.\"DESCRICAO\" ORDER BY taxa_mortalidade DESC;",
+    "tables": [
+      "internacoes",
+      "especialidade"
+    ],
+    "notes": "HARD: computed CASE WHEN mortality rate + JOIN especialidade. Returns 14 specialties. Highest rate: SEM INFORMACAO (small group). CLINICOS ~5.5%, CIRURGICO ~2.4%, OBSTETRICOS ~0.04%."
+  },
+  {
+    "id": "GT086",
+    "difficulty": "hard",
+    "question": "Quais são os 3 hospitais com maior custo médio de UTI por estado (MA e RS)?",
+    "query": "SELECT estado, \"CNES\", ROUND(custo_medio_uti, 2) AS custo_medio_uti FROM (SELECT mu.estado, h.\"CNES\", AVG(i.\"VAL_UTI\") AS custo_medio_uti, ROW_NUMBER() OVER (PARTITION BY mu.estado ORDER BY AVG(i.\"VAL_UTI\") DESC) AS rn FROM internacoes i JOIN hospital h ON i.\"CNES\" = h.\"CNES\" JOIN municipios mu ON h.\"MUNIC_MOV\" = mu.codigo_6d WHERE i.\"VAL_UTI\" > 0 AND mu.estado IN ('MA', 'RS') GROUP BY mu.estado, h.\"CNES\" HAVING COUNT(*) > 100) sub WHERE rn <= 3 ORDER BY estado, rn;",
+    "tables": [
+      "internacoes",
+      "hospital",
+      "municipios"
+    ],
+    "notes": "HARD: ROW_NUMBER() OVER (PARTITION BY estado) + 2 JOINs (hospital + municipios via MUNIC_MOV) + HAVING. MA top CNES 180637 ~R$24314; RS top CNES 9563873 ~R$37172."
+  },
+  {
+    "id": "GT087",
+    "difficulty": "hard",
+    "question": "Qual a evolução anual da taxa de mortalidade por estado (MA e RS)?",
+    "query": "SELECT mu.estado, EXTRACT(YEAR FROM i.\"DT_INTER\") AS ano, COUNT(*) AS total_internacoes, SUM(CASE WHEN i.\"MORTE\" = true THEN 1 ELSE 0 END) AS total_mortes, ROUND(SUM(CASE WHEN i.\"MORTE\" = true THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS taxa_mortalidade FROM internacoes i JOIN municipios mu ON i.\"MUNIC_RES\" = mu.codigo_6d WHERE mu.estado IN ('MA', 'RS') AND i.\"DT_INTER\" IS NOT NULL GROUP BY mu.estado, ano ORDER BY mu.estado, ano;",
+    "tables": [
+      "internacoes",
+      "municipios"
+    ],
+    "notes": "HARD: computed CASE WHEN mortality rate + EXTRACT temporal + JOIN municipios + GROUP BY 2 dimensions (estado, ano). Returns 32 rows (16 years x 2 states). RS 2021: 7.84%."
+  },
+  {
+    "id": "GT088",
+    "difficulty": "hard",
+    "question": "Quais são os 5 municípios com maior percentual de internações em UTI (com mais de 5000 internações)?",
+    "query": "SELECT mu.nome AS municipio, ROUND(SUM(CASE WHEN i.\"VAL_UTI\" > 0 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS pct_uti FROM internacoes i JOIN municipios mu ON i.\"MUNIC_RES\" = mu.codigo_6d GROUP BY mu.nome HAVING COUNT(*) > 5000 ORDER BY pct_uti DESC LIMIT 5;",
+    "tables": [
+      "internacoes",
+      "municipios"
+    ],
+    "notes": "HARD: computed CASE WHEN UTI ratio + JOIN municipios + HAVING threshold. VAL_UTI > 0 identifies UTI admissions. Top 5 municipalities with highest UTI admission rate among those with >5000 admissions."
+  },
+  {
+    "id": "GT089",
+    "difficulty": "hard",
+    "question": "Quais são os 10 hospitais com maior taxa de mortalidade obstétrica (com mais de 500 internações obstétricas)?",
+    "query": "SELECT h.\"CNES\", COUNT(*) AS total_obstetricos, SUM(CASE WHEN i.\"MORTE\" = true THEN 1 ELSE 0 END) AS total_mortes, ROUND(SUM(CASE WHEN i.\"MORTE\" = true THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS pct_mortalidade FROM internacoes i JOIN hospital h ON i.\"CNES\" = h.\"CNES\" WHERE i.\"ESPEC\" = 2 GROUP BY h.\"CNES\" HAVING COUNT(*) > 500 ORDER BY pct_mortalidade DESC LIMIT 10;",
+    "tables": [
+      "internacoes",
+      "hospital"
+    ],
+    "notes": "HARD: computed CASE WHEN mortality rate + JOIN hospital + HAVING + 2 conditions (ESPEC=2 obstetric + MORTE). Top CNES 2246872: 683 obstetric cases, 4 deaths, 0.59%."
+  },
+  {
+    "id": "GT090",
+    "difficulty": "hard",
+    "question": "Quais são os 10 diagnósticos com maior média de dias de internação (com mais de 10000 casos)?",
+    "query": "SELECT c.\"CD_DESCRICAO\" AS diagnostico, COUNT(*) AS total_internacoes, ROUND(AVG(i.\"DIAS_PERM\"), 2) AS media_dias FROM internacoes i JOIN cid c ON i.\"DIAG_PRINC\" = c.\"CID\" GROUP BY c.\"CD_DESCRICAO\" HAVING COUNT(*) > 10000 ORDER BY AVG(i.\"DIAS_PERM\") DESC LIMIT 10;",
+    "tables": [
+      "internacoes",
+      "cid"
+    ],
+    "notes": "HARD: JOIN cid for descriptions + GROUP BY + HAVING volume threshold + ORDER BY raw AVG (not ROUND, to avoid tie-breaking at rank 10). Top: Doenc p/HIV result em outr afeccoes espec ~26.27 days."
+  },
+  {
+    "id": "GT091",
+    "difficulty": "hard",
+    "question": "Quais são os 5 hospitais mais eficientes em custo por dia de internação (com mais de 1000 internações)?",
+    "query": "SELECT h.\"CNES\", ROUND(SUM(i.\"VAL_TOT\") / SUM(i.\"DIAS_PERM\"), 2) AS custo_por_dia FROM internacoes i JOIN hospital h ON i.\"CNES\" = h.\"CNES\" WHERE i.\"DIAS_PERM\" > 0 AND i.\"VAL_TOT\" IS NOT NULL GROUP BY h.\"CNES\" HAVING COUNT(*) > 1000 ORDER BY custo_por_dia ASC LIMIT 5;",
+    "tables": [
+      "internacoes",
+      "hospital"
+    ],
+    "notes": "HARD: computed ratio VAL_TOT/DIAS_PERM + JOIN hospital + HAVING + 2 conditions (DIAS_PERM > 0, VAL_TOT IS NOT NULL). Returns cost-per-day ratio per hospital. Lowest cost CNES 2463776: R$54.60/day."
+  },
+  {
+    "id": "GT092",
+    "difficulty": "hard",
+    "question": "Quais são as 5 combinações mais frequentes de diagnóstico e especialidade entre homens com mais de 60 anos?",
+    "query": "SELECT c.CD_DESCRICAO AS diagnostico, e.DESCRICAO AS especialidade, COUNT(*) AS total FROM internacoes i JOIN cid c ON i.\"DIAG_PRINC\" = c.\"CID\" JOIN especialidade e ON i.\"ESPEC\" = e.\"ESPEC\" WHERE i.\"SEXO\" = 1 AND i.\"IDADE\" > 60 GROUP BY c.CD_DESCRICAO, e.DESCRICAO ORDER BY total DESC LIMIT 5;",
+    "tables": [
+      "internacoes",
+      "cid",
+      "especialidade"
+    ],
+    "notes": "HARD: 2 JOINs (cid + especialidade) + 2 filters (SEXO=1, IDADE>60) + GROUP BY 2 dimensions. Cross-tabulation of diagnosis x specialty. Top: Pneumonia NE x CLINICOS ~79962."
+  },
+  {
+    "id": "GT093",
+    "difficulty": "hard",
+    "question": "Em qual ano ocorreu o maior número de mortes em cada estado (MA e RS)?",
+    "query": "SELECT estado, ano, total_mortes FROM (SELECT mu.estado, EXTRACT(YEAR FROM i.\"DT_INTER\") AS ano, COUNT(*) AS total_mortes, ROW_NUMBER() OVER (PARTITION BY mu.estado ORDER BY COUNT(*) DESC) AS rn FROM internacoes i JOIN municipios mu ON i.\"MUNIC_RES\" = mu.codigo_6d WHERE i.\"MORTE\" = true AND mu.estado IN ('MA', 'RS') AND i.\"DT_INTER\" IS NOT NULL GROUP BY mu.estado, ano) sub WHERE rn = 1 ORDER BY estado;",
+    "tables": [
+      "internacoes",
+      "municipios"
+    ],
+    "notes": "HARD: ROW_NUMBER() OVER (PARTITION BY estado ORDER BY deaths DESC) + EXTRACT temporal + JOIN municipios + MORTE filter. MA: 2021 (17311 deaths); RS: year with peak deaths."
+  },
+  {
+    "id": "GT094",
+    "difficulty": "easy",
+    "question": "Quantas nacionalidades estão cadastradas?",
+    "query": "SELECT COUNT(*) AS total_nacionalidades FROM nacionalidade;",
+    "tables": [
+      "nacionalidade"
+    ],
+    "notes": "Simple count of lookup table. Result: 333 nationalities."
+  },
+  {
+    "id": "GT095",
+    "difficulty": "easy",
+    "question": "Quantas categorias de raça/cor estão cadastradas?",
+    "query": "SELECT COUNT(*) AS total_categorias FROM raca_cor;",
+    "tables": [
+      "raca_cor"
+    ],
+    "notes": "Simple count of lookup table. Result: 7 categories (Branca, Preta, Parda, Amarela, Indigena, Sem informacao, Nao declarada)."
+  },
+  {
+    "id": "GT096",
+    "difficulty": "easy",
+    "question": "Quantos tipos de vínculo previdenciário existem?",
+    "query": "SELECT COUNT(*) AS total_vinculos FROM vincprev;",
+    "tables": [
+      "vincprev"
+    ],
+    "notes": "Simple count of lookup table. Result: 7 types (Aposentado, Empregado, etc.)."
+  },
+  {
+    "id": "GT097",
+    "difficulty": "easy",
+    "question": "Quantos níveis de instrução estão cadastrados?",
+    "query": "SELECT COUNT(*) AS total_niveis FROM instrucao;",
+    "tables": [
+      "instrucao"
+    ],
+    "notes": "Simple count of lookup table. Result: 12 education levels."
+  },
+  {
+    "id": "GT098",
+    "difficulty": "easy",
+    "question": "Quantos municípios estão cadastrados no total?",
+    "query": "SELECT COUNT(*) AS total_municipios FROM municipios;",
+    "tables": [
+      "municipios"
+    ],
+    "notes": "Simple count of municipalities reference table. Result: 5571 municipalities."
+  },
+  {
+    "id": "GT099",
+    "difficulty": "easy",
+    "question": "Qual o total gasto em internações de UTI?",
+    "query": "SELECT SUM(\"VAL_UTI\") AS total_gasto_uti FROM internacoes WHERE \"VAL_UTI\" > 0;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "CRITICAL: uti_detalhes absorbed into internacoes. VAL_UTI > 0 identifies UTI admissions. Result: ~R$9.36 billion."
+  },
+  {
+    "id": "GT100",
+    "difficulty": "easy",
+    "question": "Qual o maior valor de serviço profissional registrado em uma internação?",
+    "query": "SELECT MAX(\"VAL_SP\") AS maior_val_sp FROM internacoes WHERE \"VAL_SP\" IS NOT NULL;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "Simple aggregation — maximum professional services value. Result: ~R$66,078.14."
+  },
+  {
+    "id": "GT101",
+    "difficulty": "easy",
+    "question": "Qual a maior permanência hospitalar registrada?",
+    "query": "SELECT MAX(\"DIAS_PERM\") AS max_dias FROM internacoes;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "CRITICAL: use DIAS_PERM (renamed from QT_DIARIAS). Simple MAX aggregation. Result: 363 days."
+  },
+  {
+    "id": "GT102",
+    "difficulty": "easy",
+    "question": "Quantos municípios estão no estado do Maranhão?",
+    "query": "SELECT COUNT(*) AS municipios_ma FROM municipios WHERE estado = 'MA';",
+    "tables": [
+      "municipios"
+    ],
+    "notes": "Simple filter on reference table. Result: 217 municipalities in MA."
+  },
+  {
+    "id": "GT103",
+    "difficulty": "easy",
+    "question": "Quantos estados distintos estão cobertos pelo banco de dados?",
+    "query": "SELECT COUNT(DISTINCT estado) AS total_estados FROM municipios;",
+    "tables": [
+      "municipios"
+    ],
+    "notes": "COUNT DISTINCT on state field in municipalities table. Result: 28 states (all Brazilian states present in the dataset)."
+  },
+  {
+    "id": "GT104",
+    "difficulty": "easy",
+    "question": "Quantas internações tiveram cobrança de serviço hospitalar?",
+    "query": "SELECT COUNT(*) AS total_com_sh FROM internacoes WHERE \"VAL_SH\" > 0;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "Simple filter on VAL_SH (hospital services value). Result: ~18,381,977 admissions (~99.7% of total)."
+  },
+  {
+    "id": "GT105",
+    "difficulty": "medium",
+    "question": "Quantas internações ocorreram em fins de semana (sábado e domingo)?",
+    "query": "SELECT COUNT(*) AS internacoes_fds FROM internacoes WHERE EXTRACT(DOW FROM \"DT_INTER\") IN (0, 6) AND \"DT_INTER\" IS NOT NULL;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "CRITICAL: DuckDB DOW — 0=Sunday, 6=Saturday. Temporal EXTRACT on DT_INTER. Result: ~3,646,287 weekend admissions (~19.8% of total)."
+  },
+  {
+    "id": "GT106",
+    "difficulty": "medium",
+    "question": "Qual o custo médio de internação por especialidade médica?",
+    "query": "SELECT e.\"DESCRICAO\" AS especialidade, ROUND(AVG(i.\"VAL_TOT\"), 2) AS custo_medio FROM internacoes i JOIN especialidade e ON i.\"ESPEC\" = e.\"ESPEC\" WHERE i.\"VAL_TOT\" IS NOT NULL GROUP BY e.\"DESCRICAO\" ORDER BY custo_medio DESC;",
+    "tables": [
+      "internacoes",
+      "especialidade"
+    ],
+    "notes": "JOIN especialidade for descriptions + GROUP BY + AVG(VAL_TOT). Returns 14 specialty groups ordered by average cost. No LIMIT — question asks for all specialties."
+  },
+  {
+    "id": "GT107",
+    "difficulty": "medium",
+    "question": "Quantas internações psiquiátricas resultaram em óbito?",
+    "query": "SELECT COUNT(*) AS psiquiatria_obitos FROM internacoes WHERE \"ESPEC\" = 5 AND \"MORTE\" = true;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "CRITICAL: ESPEC=5 is PSIQUIATRIA (not 6). MORTE boolean absorbed from mortes table. 2 conditions. Result: 1,118 deaths."
+  },
+  {
+    "id": "GT108",
+    "difficulty": "medium",
+    "question": "Qual a distribuição de internações por raça/cor?",
+    "query": "SELECT r.\"DESCRICAO\" AS raca_cor, COUNT(*) AS total_internacoes FROM internacoes i JOIN raca_cor r ON i.\"RACA_COR\" = r.\"RACA_COR\" GROUP BY r.\"DESCRICAO\" ORDER BY total_internacoes DESC;",
+    "tables": [
+      "internacoes",
+      "raca_cor"
+    ],
+    "notes": "JOIN raca_cor for descriptions + GROUP BY. Returns 6 groups. No LIMIT — question asks for full distribution. Top: BRANCA 8,857,139; PARDA 3,783,817; PRETA 615,708."
+  },
+  {
+    "id": "GT109",
+    "difficulty": "easy",
+    "question": "Quantas internações foram registradas para pacientes com menos de 1 ano de idade?",
+    "query": "SELECT COUNT(*) AS total_neonatos FROM internacoes WHERE \"IDADE\" = 0;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "CRITICAL: IDADE is an integer column (0–130). IDADE = 0 identifies neonates and infants under 1 year. Result: 861,065."
+  },
+  {
+    "id": "GT110",
+    "difficulty": "easy",
+    "question": "Qual o total gasto em serviços profissionais nas internações?",
+    "query": "SELECT SUM(\"VAL_SP\") AS total_val_sp FROM internacoes WHERE \"VAL_SP\" IS NOT NULL;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "VAL_SP is the professional services value column in internacoes. Simple SUM aggregation. Result: ~R$ 8.12 billion."
+  },
+  {
+    "id": "GT111",
+    "difficulty": "hard",
+    "question": "Quantos hospitais registraram internações mas nunca tiveram nenhum óbito registrado?",
+    "query": "SELECT COUNT(*) AS hospitais_sem_obito FROM (SELECT DISTINCT i.\"CNES\" FROM internacoes i WHERE NOT EXISTS (SELECT 1 FROM internacoes d WHERE d.\"CNES\" = i.\"CNES\" AND d.\"MORTE\" = true)) sub;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "HARD: anti-join pattern via NOT EXISTS correlated subquery. Finds hospitals with at least one admission but zero deaths. Result: 101 hospitals."
+  },
+  {
+    "id": "GT112",
+    "difficulty": "hard",
+    "question": "Qual o crescimento percentual anual de internações no estado do RS entre 2008 e 2023?",
+    "query": "SELECT ano, total_internacoes, LAG(total_internacoes) OVER (ORDER BY ano) AS ano_anterior, ROUND((total_internacoes - LAG(total_internacoes) OVER (ORDER BY ano)) * 100.0 / LAG(total_internacoes) OVER (ORDER BY ano), 2) AS pct_crescimento FROM (SELECT EXTRACT(YEAR FROM i.\"DT_INTER\") AS ano, COUNT(*) AS total_internacoes FROM internacoes i JOIN municipios mu ON i.\"MUNIC_RES\" = mu.codigo_6d WHERE mu.estado = 'RS' AND i.\"DT_INTER\" IS NOT NULL GROUP BY ano) sub ORDER BY ano;",
+    "tables": [
+      "internacoes",
+      "municipios"
+    ],
+    "notes": "HARD: LAG window function over subquery with JOIN + EXTRACT. First row (2008) has NULL for pct_crescimento. Result: 16 rows (2008-2023); 2009: +1.43%, 2010: -0.96%, 2011: -1.63%, 2012: +1.77%."
+  },
+  {
+    "id": "GT113",
+    "difficulty": "hard",
+    "question": "Quais são os 10 municípios do RS com taxa de mortalidade acima da média estadual (considerando apenas municípios com mais de 500 internações)?",
+    "query": "WITH media_rs AS (SELECT ROUND(SUM(CASE WHEN i.\"MORTE\" = true THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 4) AS taxa_media FROM internacoes i JOIN municipios mu ON i.\"MUNIC_RES\" = mu.codigo_6d WHERE mu.estado = 'RS'), por_municipio AS (SELECT mu.nome, COUNT(*) AS total_internacoes, ROUND(SUM(CASE WHEN i.\"MORTE\" = true THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS taxa_mortalidade FROM internacoes i JOIN municipios mu ON i.\"MUNIC_RES\" = mu.codigo_6d WHERE mu.estado = 'RS' GROUP BY mu.nome HAVING COUNT(*) > 500) SELECT pm.nome, pm.total_internacoes, pm.taxa_mortalidade FROM por_municipio pm, media_rs mr WHERE pm.taxa_mortalidade > mr.taxa_media ORDER BY pm.taxa_mortalidade DESC LIMIT 10;",
+    "tables": [
+      "internacoes",
+      "municipios"
+    ],
+    "notes": "HARD: two CTEs — one computes RS state-level average mortality (5.174%), second aggregates per municipality with HAVING > 500. Cross-join selects only municipalities above average. Output: 3 cols (nome, total_internacoes, taxa_mortalidade). Top: Santo Antônio das Missões 7.70%, Morro Redondo 7.43%, Rosário do Sul 7.41%."
+  },
+  {
+    "id": "GT114",
+    "difficulty": "hard",
+    "question": "Qual a distribuição dos métodos contraceptivos utilizados por pacientes em internações obstétricas, incluindo os casos sem informação?",
+    "query": "SELECT COALESCE(c.\"DESCRICAO\", 'SEM INFORMACAO') AS metodo_contraceptivo, COUNT(*) AS total_internacoes FROM internacoes i LEFT JOIN contraceptivos c ON i.\"CONTRACEP1\" = c.\"CONTRACEPTIVO\" WHERE i.\"ESPEC\" = 2 GROUP BY COALESCE(c.\"DESCRICAO\", 'SEM INFORMACAO') ORDER BY total_internacoes DESC LIMIT 10;",
+    "tables": [
+      "internacoes",
+      "contraceptivos"
+    ],
+    "notes": "HARD: LEFT JOIN with COALESCE to preserve NULL/unmatched rows as 'SEM INFORMACAO'. CRITICAL: contraceptivos PK is 'CONTRACEPTIVO' (not 'CONTRACEP1'). Filter ESPEC=2 for obstetric. Top: SEM INFORMACAO 2,858,216; PRESERVATIVO 12,433; HORMONIO ORAL 7,323."
+  },
+  {
+    "id": "GT115",
+    "difficulty": "hard",
+    "question": "Qual o hospital com maior receita total por especialidade médica, considerando apenas hospitais com mais de 500 internações na especialidade?",
+    "query": "SELECT especialidade, \"CNES\", receita_total FROM (SELECT e.\"DESCRICAO\" AS especialidade, i.\"CNES\", ROUND(SUM(i.\"VAL_TOT\"), 2) AS receita_total, ROW_NUMBER() OVER (PARTITION BY e.\"DESCRICAO\" ORDER BY SUM(i.\"VAL_TOT\") DESC) AS rn FROM internacoes i JOIN especialidade e ON i.\"ESPEC\" = e.\"ESPEC\" GROUP BY e.\"DESCRICAO\", i.\"CNES\" HAVING COUNT(*) > 500) sub WHERE rn = 1 ORDER BY receita_total DESC;",
+    "tables": [
+      "internacoes",
+      "especialidade"
+    ],
+    "notes": "HARD: ROW_NUMBER() OVER (PARTITION BY especialidade ORDER BY SUM DESC) with HAVING filter inside subquery. Returns top-1 hospital per specialty (13 rows). Top CIRURGICO: CNES 2237253 R$2.12B; CLINICOS: CNES 2237601 R$990M."
+  },
+  {
+    "id": "GT116",
+    "difficulty": "hard",
+    "question": "Quais são os 10 diagnósticos com maior crescimento absoluto de internações entre os períodos 2008-2012 e 2019-2023?",
+    "query": "WITH p1 AS (SELECT \"DIAG_PRINC\", COUNT(*) AS n1 FROM internacoes WHERE EXTRACT(YEAR FROM \"DT_INTER\") BETWEEN 2008 AND 2012 AND \"DIAG_PRINC\" IS NOT NULL GROUP BY \"DIAG_PRINC\"), p2 AS (SELECT \"DIAG_PRINC\", COUNT(*) AS n2 FROM internacoes WHERE EXTRACT(YEAR FROM \"DT_INTER\") BETWEEN 2019 AND 2023 AND \"DIAG_PRINC\" IS NOT NULL GROUP BY \"DIAG_PRINC\") SELECT c.\"CD_DESCRICAO\", p1.n1 AS periodo_2008_2012, p2.n2 AS periodo_2019_2023, (p2.n2 - p1.n1) AS crescimento_absoluto FROM p1 JOIN p2 ON p1.\"DIAG_PRINC\" = p2.\"DIAG_PRINC\" JOIN cid c ON p1.\"DIAG_PRINC\" = c.\"CID\" WHERE p1.n1 > 1000 ORDER BY crescimento_absoluto DESC LIMIT 10;",
+    "tables": [
+      "internacoes",
+      "cid"
+    ],
+    "notes": "HARD: two CTEs aggregating two distinct 5-year periods, joined on DIAG_PRINC, then joined with cid for descriptions. Threshold p1.n1 > 1000 filters rare diagnoses. Top: Parto por cesariana eletiva +41,812; Infecção bacteriana NE +38,204; Infecção trato urinário +34,449."
+  },
+  {
+    "id": "GT117",
+    "difficulty": "hard",
+    "question": "Qual a razão entre internações masculinas e femininas em UTI por ano, considerando apenas internações cirúrgicas (ESPEC = 1)?",
+    "query": "SELECT EXTRACT(YEAR FROM \"DT_INTER\") AS ano, COUNT(CASE WHEN \"SEXO\" = 1 THEN 1 END) AS homens_uti, COUNT(CASE WHEN \"SEXO\" = 3 THEN 1 END) AS mulheres_uti, ROUND(COUNT(CASE WHEN \"SEXO\" = 1 THEN 1 END) * 100.0 / NULLIF(COUNT(CASE WHEN \"SEXO\" = 3 THEN 1 END), 0), 2) AS razao_h_m_pct FROM internacoes WHERE \"VAL_UTI\" > 0 AND \"ESPEC\" = 1 AND \"DT_INTER\" IS NOT NULL GROUP BY ano ORDER BY ano;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "HARD: dual conditional aggregation (COUNT CASE WHEN) + NULLIF to avoid division by zero + EXTRACT temporal. 3 simultaneous conditions (VAL_UTI > 0, ESPEC = 1, SEXO filter). Result: 16 rows. 2008: homens 11,689 / mulheres 8,181 → razao 142.88%; consistently ~145% across years."
+  },
+  {
+    "id": "GT118",
+    "difficulty": "hard",
+    "question": "Quais são os 10 hospitais com mais de 1000 internações que nunca registraram nenhuma internação em UTI?",
+    "query": "SELECT \"CNES\", COUNT(*) AS total_internacoes FROM internacoes GROUP BY \"CNES\" HAVING COUNT(*) > 1000 AND SUM(CASE WHEN \"VAL_UTI\" > 0 THEN 1 ELSE 0 END) = 0 ORDER BY total_internacoes DESC LIMIT 10;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "HARD: HAVING clause with dual aggregate conditions — COUNT(*) > 1000 AND SUM(CASE WHEN) = 0 (anti-condition). Identifies hospitals that never had a UTI admission. 462 hospitals match total. Top: CNES 2772299 with 109,261 admissions."
+  },
+  {
+    "id": "GT119",
+    "difficulty": "hard",
+    "question": "Qual o custo médio de UTI por especialidade médica e sexo do paciente, considerando apenas internações com custo de UTI registrado?",
+    "query": "SELECT e.\"DESCRICAO\" AS especialidade, CASE WHEN i.\"SEXO\" = 1 THEN 'Masculino' ELSE 'Feminino' END AS sexo, ROUND(AVG(i.\"VAL_UTI\"), 2) AS custo_medio_uti FROM internacoes i JOIN especialidade e ON i.\"ESPEC\" = e.\"ESPEC\" WHERE i.\"VAL_UTI\" > 0 AND i.\"SEXO\" IN (1, 3) GROUP BY e.\"DESCRICAO\", i.\"SEXO\" ORDER BY custo_medio_uti DESC;",
+    "tables": [
+      "internacoes",
+      "especialidade"
+    ],
+    "notes": "HARD: JOIN especialidade + CASE WHEN for sex label + dual filter (VAL_UTI > 0, SEXO IN) + GROUP BY 2 dimensions. Returns 14 rows (3 cols: especialidade, sexo, custo_medio_uti). Top by custo_medio: PEDIATRICOS Feminino R$11,572; PEDIATRICOS Masculino R$11,001; CLINICOS Masculino R$9,540."
+  },
+  {
+    "id": "GT120",
+    "difficulty": "hard",
+    "question": "Qual o total e o percentual de internações por doenças respiratórias (CID J%) em cada trimestre do ano no estado do RS?",
+    "query": "SELECT t.trimestre, COUNT(*) AS total_respiratorio, ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (), 2) AS pct_anual FROM internacoes i JOIN municipios mu ON i.\"MUNIC_RES\" = mu.codigo_6d JOIN tempo t ON i.\"DT_INTER\" = t.data WHERE i.\"DIAG_PRINC\" LIKE 'J%' AND mu.estado = 'RS' GROUP BY t.trimestre ORDER BY t.trimestre;",
+    "tables": [
+      "internacoes",
+      "municipios",
+      "tempo"
+    ],
+    "notes": "HARD: 3-table JOIN (internacoes + municipios + tempo) + window function SUM(...) OVER () for global total percentage + LIKE filter on CID prefix. Result: 4 rows. Q1: 281,637 (18.16%); Q2: 435,241 (28.07%); Q3: 487,525 (31.44% — peak, Southern Hemisphere winter); Q4: 346,395 (22.34%)."
+  },
+  {
+    "id": "GT121",
+    "difficulty": "hard",
+    "question": "Quais municípios com mais de 500 internações aparecem simultaneamente no top-20 de volume e no top-20 de taxa de mortalidade nos estados MA e RS?",
+    "query": "WITH top_volume AS (SELECT mu.nome FROM internacoes i JOIN municipios mu ON i.\"MUNIC_RES\" = mu.codigo_6d WHERE mu.estado IN ('MA', 'RS') GROUP BY mu.nome HAVING COUNT(*) > 500 ORDER BY COUNT(*) DESC LIMIT 20), top_mortalidade AS (SELECT mu.nome FROM internacoes i JOIN municipios mu ON i.\"MUNIC_RES\" = mu.codigo_6d WHERE mu.estado IN ('MA', 'RS') GROUP BY mu.nome HAVING COUNT(*) > 500 ORDER BY SUM(CASE WHEN i.\"MORTE\" = true THEN 1 ELSE 0 END) * 1.0 / COUNT(*) DESC LIMIT 20) SELECT tv.nome FROM top_volume tv WHERE tv.nome IN (SELECT nome FROM top_mortalidade) ORDER BY tv.nome;",
+    "tables": [
+      "internacoes",
+      "municipios"
+    ],
+    "notes": "HARD: two CTEs each computing a different top-20 ranking, combined with IN subquery (intersection). Result: 2 municipalities — Bagé and São Leopoldo (RS cities that are both high-volume and high-mortality)."
+  },
+  {
+    "id": "GT122",
+    "difficulty": "hard",
+    "question": "Quais procedimentos, ordenados por volume decrescente, cobrem até 80% do total de atendimentos realizados?",
+    "query": "SELECT nome_proc FROM (SELECT p.\"NOME_PROC\" AS nome_proc, COUNT(*) AS total_atendimentos, ROUND(SUM(COUNT(*)) OVER (ORDER BY COUNT(*) DESC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) * 100.0 / SUM(COUNT(*)) OVER (), 2) AS pct_acumulado FROM atendimentos a JOIN procedimentos p ON a.\"PROC_REA\" = p.\"PROC_REA\" GROUP BY p.\"NOME_PROC\") sub WHERE pct_acumulado <= 80 ORDER BY total_atendimentos DESC;",
+    "tables": [
+      "atendimentos",
+      "procedimentos"
+    ],
+    "notes": "HARD: cumulative SUM window function (ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) + global SUM OVER() for percentage. Pareto analysis: 110 procedures cover 80% of all admissions. Output: 1 col (nome_proc only, since question asks \"quais procedimentos\"). Same 110 procedures regardless of ROWS vs RANGE frame mode confirmed."
+  },
+  {
+    "id": "GT123",
+    "difficulty": "hard",
+    "question": "Compare o IDHM médio dos municípios do RS com taxa de mortalidade hospitalar acima e abaixo da média estadual (mínimo de 500 internações).",
+    "query": "WITH media_rs AS (SELECT SUM(CASE WHEN i.\"MORTE\" = true THEN 1 ELSE 0 END) * 100.0 / COUNT(*) AS taxa_media FROM internacoes i JOIN municipios mu ON i.\"MUNIC_RES\" = mu.codigo_6d WHERE mu.estado = 'RS'), mortalidade_mun AS (SELECT mu.codigo_6d, mu.nome, SUM(CASE WHEN i.\"MORTE\" = true THEN 1 ELSE 0 END) * 100.0 / COUNT(*) AS taxa_mort FROM internacoes i JOIN municipios mu ON i.\"MUNIC_RES\" = mu.codigo_6d WHERE mu.estado = 'RS' GROUP BY mu.codigo_6d, mu.nome HAVING COUNT(*) > 500) SELECT CASE WHEN mm.taxa_mort > mr.taxa_media THEN 'Acima da media' ELSE 'Abaixo da media' END AS grupo, COUNT(*) AS qtd_municipios, ROUND(AVG(s.valor), 4) AS idhm_medio FROM mortalidade_mun mm, media_rs mr JOIN socioeconomico s ON mm.codigo_6d = s.codigo_6d AND s.metrica = 'idhm' GROUP BY CASE WHEN mm.taxa_mort > mr.taxa_media THEN 'Acima da media' ELSE 'Abaixo da media' END ORDER BY idhm_medio;",
+    "tables": [
+      "internacoes",
+      "municipios",
+      "socioeconomico"
+    ],
+    "notes": "HARD: 2 CTEs + 3-table JOIN (internacoes + municipios + socioeconomico) + conditional GROUP BY comparing groups. Result: 2 rows. Acima da media: 165 municípios, IDHM 0.7064; Abaixo da media: 332 municípios, IDHM 0.7149 — municipalities with higher mortality tend to have slightly lower IDHM."
+  },
+  {
+    "id": "GT124",
+    "difficulty": "hard",
+    "question": "Qual a média móvel de 3 anos de internações no estado do RS por ano (2008-2023)?",
+    "query": "SELECT ano, total_internacoes, ROUND(AVG(total_internacoes) OVER (ORDER BY ano ROWS BETWEEN 2 PRECEDING AND CURRENT ROW), 0) AS media_movel_3anos FROM (SELECT EXTRACT(YEAR FROM i.\"DT_INTER\") AS ano, COUNT(*) AS total_internacoes FROM internacoes i JOIN municipios mu ON i.\"MUNIC_RES\" = mu.codigo_6d WHERE mu.estado = 'RS' AND i.\"DT_INTER\" IS NOT NULL GROUP BY ano) sub ORDER BY ano;",
+    "tables": [
+      "internacoes",
+      "municipios"
+    ],
+    "notes": "HARD: AVG() OVER (ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) window function over a subquery with JOIN + EXTRACT. First 2 rows have partial windows (1 and 2 years respectively). Result: 16 rows; 2010: 722,515 avg; 2023: ~736k avg (3-year smoothed trend)."
+  },
+  {
+    "id": "GT125",
+    "difficulty": "hard",
+    "question": "Qual a distribuição e percentual de internações em UTI por dia da semana?",
+    "query": "SELECT t.dia_semana, COUNT(*) AS total_internacoes_uti, ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (), 2) AS pct_total FROM internacoes i JOIN tempo t ON i.\"DT_INTER\" = t.data WHERE i.\"VAL_UTI\" > 0 GROUP BY t.dia_semana ORDER BY t.dia_semana;",
+    "tables": [
+      "internacoes",
+      "tempo"
+    ],
+    "notes": "HARD: JOIN with tempo dimension table + window function SUM() OVER () for percentage + VAL_UTI > 0 filter. dia_semana: 1=Monday ... 7=Sunday. Result: 7 rows. Weekdays (Mon-Fri) each ~15%, weekends lower (~13%). Mon: 175,763 (15.85%); Fri: 164,461 (14.83%)."
+  },
+  {
+    "id": "GT126",
+    "difficulty": "hard",
+    "question": "Como se distribuem os hospitais em quartis de volume de internações? Mostre o número de hospitais e o intervalo de internações por quartil.",
+    "query": "SELECT ntile_grupo, COUNT(*) AS total_hospitais, MIN(total_internacoes) AS min_internacoes, MAX(total_internacoes) AS max_internacoes, ROUND(AVG(total_internacoes), 0) AS media_internacoes FROM (SELECT \"CNES\", total_internacoes, NTILE(4) OVER (ORDER BY total_internacoes) AS ntile_grupo FROM (SELECT \"CNES\", COUNT(*) AS total_internacoes FROM internacoes GROUP BY \"CNES\") sub) ranked GROUP BY ntile_grupo ORDER BY ntile_grupo;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "HARD: NTILE(4) window function over double-nested subquery. Result: 4 rows (quartiles). Q1 (lowest): 178 hospitals, 1–3,372 admissions, avg 1,172; Q4 (highest): 177 hospitals, 26,785–584,036 admissions, avg 79,634."
+  },
+  {
+    "id": "GT127",
+    "difficulty": "hard",
+    "question": "Quais são os 10 diagnósticos com maior queda absoluta de internações entre os períodos 2008-2012 e 2019-2023?",
+    "query": "WITH p1 AS (SELECT \"DIAG_PRINC\", COUNT(*) AS n1 FROM internacoes WHERE EXTRACT(YEAR FROM \"DT_INTER\") BETWEEN 2008 AND 2012 AND \"DIAG_PRINC\" IS NOT NULL GROUP BY \"DIAG_PRINC\"), p2 AS (SELECT \"DIAG_PRINC\", COUNT(*) AS n2 FROM internacoes WHERE EXTRACT(YEAR FROM \"DT_INTER\") BETWEEN 2019 AND 2023 AND \"DIAG_PRINC\" IS NOT NULL GROUP BY \"DIAG_PRINC\") SELECT c.\"CD_DESCRICAO\", p1.n1 AS periodo_2008_2012, p2.n2 AS periodo_2019_2023, (p1.n1 - p2.n2) AS queda_absoluta FROM p1 JOIN p2 ON p1.\"DIAG_PRINC\" = p2.\"DIAG_PRINC\" JOIN cid c ON p1.\"DIAG_PRINC\" = c.\"CID\" WHERE p1.n1 > 1000 ORDER BY queda_absoluta DESC LIMIT 10;",
+    "tables": [
+      "internacoes",
+      "cid"
+    ],
+    "notes": "HARD: two CTEs comparing two 5-year periods, ORDER BY queda_absoluta DESC (opposite of GT116 which ordered by crescimento). Top: Parto único espontâneo NE -97,759; Asma NE -51,552; DPOC NE -42,374."
+  },
+  {
+    "id": "GT128",
+    "difficulty": "hard",
+    "question": "Quais municípios com mais de 1000 internações têm taxa de internação em UTI mais de duas vezes acima da média nacional?",
+    "query": "WITH media_nacional AS (SELECT SUM(CASE WHEN \"VAL_UTI\" > 0 THEN 1 ELSE 0 END) * 100.0 / COUNT(*) AS taxa_uti_nacional FROM internacoes) SELECT mu.nome, mu.estado, COUNT(*) AS total_internacoes, ROUND(SUM(CASE WHEN i.\"VAL_UTI\" > 0 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS taxa_uti_local, ROUND(mn.taxa_uti_nacional, 2) AS taxa_uti_nacional FROM internacoes i JOIN municipios mu ON i.\"MUNIC_RES\" = mu.codigo_6d, media_nacional mn GROUP BY mu.nome, mu.estado, mn.taxa_uti_nacional HAVING COUNT(*) > 1000 AND SUM(CASE WHEN i.\"VAL_UTI\" > 0 THEN 1 ELSE 0 END) * 100.0 / COUNT(*) > 2 * mn.taxa_uti_nacional ORDER BY taxa_uti_local DESC LIMIT 10;",
+    "tables": [
+      "internacoes",
+      "municipios"
+    ],
+    "notes": "HARD: CTE for national avg + cross-join + HAVING with ratio condition comparing local vs 2x national. National avg: ~6.01%. Result: 6 municipalities; top: Bagé 13.49%, Cidreira 12.34%, Barra do Ribeiro 12.22%."
+  },
+  {
+    "id": "GT129",
+    "difficulty": "hard",
+    "question": "Quais códigos CID aparecem como causa de morte em óbitos registrados mas nunca foram registrados como diagnóstico principal de internação?",
+    "query": "SELECT c.\"CID\", c.\"CD_DESCRICAO\", COUNT(*) AS total_como_morte FROM internacoes i JOIN cid c ON i.\"CID_MORTE\" = c.\"CID\" WHERE i.\"MORTE\" = true AND i.\"CID_MORTE\" IS NOT NULL AND i.\"CID_MORTE\" != '0' AND NOT EXISTS (SELECT 1 FROM internacoes d WHERE d.\"DIAG_PRINC\" = c.\"CID\") GROUP BY c.\"CID\", c.\"CD_DESCRICAO\" ORDER BY total_como_morte DESC LIMIT 10;",
+    "tables": [
+      "internacoes",
+      "cid"
+    ],
+    "notes": "HARD: NOT EXISTS correlated anti-join subquery + MORTE=true filter + exclusion of code '0'. Result: 10 rows — all are external cause codes (Y/V/W series) such as Y629 'Durante prest cuidado cirurgico e medico NE' (52 deaths) which appear as death cause but never as primary admission diagnosis."
+  },
+  {
+    "id": "GT130",
+    "difficulty": "hard",
+    "question": "Quais são os 10 municípios com maior taxa de mortalidade em internações obstétricas, entre aqueles com mais de 200 internações obstétricas e taxa acima da média nacional obstétrica?",
+    "query": "WITH media_obs AS (SELECT SUM(CASE WHEN i.\"MORTE\" = true THEN 1 ELSE 0 END) * 100.0 / COUNT(*) AS taxa_media_obstetrica FROM internacoes i WHERE i.\"ESPEC\" = 2) SELECT mu.nome, mu.estado, COUNT(*) AS total_obstetrico, SUM(CASE WHEN i.\"MORTE\" = true THEN 1 ELSE 0 END) AS total_mortes, ROUND(SUM(CASE WHEN i.\"MORTE\" = true THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 4) AS taxa_mort_obstetrica, ROUND(mo.taxa_media_obstetrica, 4) AS media_nacional FROM internacoes i JOIN municipios mu ON i.\"MUNIC_RES\" = mu.codigo_6d, media_obs mo WHERE i.\"ESPEC\" = 2 GROUP BY mu.nome, mu.estado, mo.taxa_media_obstetrica HAVING COUNT(*) > 200 AND SUM(CASE WHEN i.\"MORTE\" = true THEN 1 ELSE 0 END) * 100.0 / COUNT(*) > mo.taxa_media_obstetrica ORDER BY taxa_mort_obstetrica DESC LIMIT 10;",
+    "tables": [
+      "internacoes",
+      "municipios"
+    ],
+    "notes": "HARD: CTE for national obstetric avg + cross-join + 2 HAVING conditions (volume + rate threshold) + ESPEC=2 filter. National obstetric mortality avg: ~0.0274%. Top: Lavras do Sul RS 0.8464%, Aceguá RS 0.6079%. Returns municipalities with 2–7 obstetric deaths but high rate due to small volume."
+  },
+  {
+    "id": "GT131",
+    "difficulty": "hard",
+    "question": "Quais são os 5 procedimentos mais realizados em internações de pacientes indígenas?",
+    "query": "SELECT p.\"NOME_PROC\", COUNT(*) AS total_atendimentos FROM atendimentos a JOIN procedimentos p ON a.\"PROC_REA\" = p.\"PROC_REA\" JOIN internacoes i ON a.\"N_AIH\" = i.\"N_AIH\" WHERE i.\"RACA_COR\" = 5 GROUP BY p.\"NOME_PROC\" ORDER BY total_atendimentos DESC LIMIT 5;",
+    "tables": [
+      "atendimentos",
+      "procedimentos",
+      "internacoes"
+    ],
+    "notes": "HARD: 3-table JOIN (atendimentos + procedimentos + internacoes) + RACA_COR = 5 filter (indigenous). Non-obvious join chain: atendimentos→procedimentos via PROC_REA, atendimentos→internacoes via N_AIH. Result: PARTO NORMAL 24,746; TRATAMENTO DE PNEUMONIAS 16,110; PARTO CESARIANO 8,156."
+  },
+  {
+    "id": "GT132",
+    "difficulty": "hard",
+    "question": "Quais os 3 hospitais com maior valor médio de serviço hospitalar (VAL_SH) por estado (MA e RS), considerando hospitais com mais de 500 internações?",
+    "query": "SELECT estado, \"CNES\", total_internacoes, avg_val_sh, rk FROM (SELECT mu.estado, i.\"CNES\", COUNT(*) AS total_internacoes, ROUND(AVG(i.\"VAL_SH\"), 2) AS avg_val_sh, RANK() OVER (PARTITION BY mu.estado ORDER BY AVG(i.\"VAL_SH\") DESC) AS rk FROM internacoes i JOIN municipios mu ON i.\"MUNIC_RES\" = mu.codigo_6d WHERE mu.estado IN ('MA', 'RS') AND i.\"VAL_SH\" IS NOT NULL GROUP BY mu.estado, i.\"CNES\" HAVING COUNT(*) > 500) sub WHERE rk <= 3 ORDER BY estado, rk;",
+    "tables": [
+      "internacoes",
+      "municipios"
+    ],
+    "notes": "HARD: RANK() OVER (PARTITION BY estado ORDER BY AVG DESC) + HAVING inside subquery. Uses RANK (allows ties, unlike ROW_NUMBER). Result: 6 rows. Top MA: CNES 145602 R$10,236; Top RS: CNES 2237849 R$10,087."
+  },
+  {
+    "id": "GT133",
+    "difficulty": "hard",
+    "question": "Em qual mês de cada ano (2008-2023) ocorreu o maior número de internações em UTI?",
+    "query": "SELECT ano, mes, total_uti FROM (SELECT EXTRACT(YEAR FROM \"DT_INTER\") AS ano, EXTRACT(MONTH FROM \"DT_INTER\") AS mes, COUNT(*) AS total_uti, ROW_NUMBER() OVER (PARTITION BY EXTRACT(YEAR FROM \"DT_INTER\") ORDER BY COUNT(*) DESC) AS rn FROM internacoes WHERE \"VAL_UTI\" > 0 AND \"DT_INTER\" IS NOT NULL GROUP BY ano, mes) sub WHERE rn = 1 ORDER BY ano;",
+    "tables": [
+      "internacoes"
+    ],
+    "notes": "HARD: ROW_NUMBER() OVER (PARTITION BY year ORDER BY COUNT DESC) with double EXTRACT. Returns 1 row per year (16 rows total). Results vary: 2008 peak in August (month 8), 2009 in September, 2010 in March — showing seasonal UTI variation."
+  },
+  {
+    "id": "GT134",
+    "difficulty": "hard",
+    "question": "Qual a média de dias de internação por especialidade médica, comparando lado a lado os estados MA e RS?",
+    "query": "SELECT e.\"DESCRICAO\" AS especialidade, ROUND(AVG(CASE WHEN mu.estado = 'MA' THEN i.\"DIAS_PERM\" END), 2) AS media_dias_MA, ROUND(AVG(CASE WHEN mu.estado = 'RS' THEN i.\"DIAS_PERM\" END), 2) AS media_dias_RS, COUNT(CASE WHEN mu.estado = 'MA' THEN 1 END) AS total_MA, COUNT(CASE WHEN mu.estado = 'RS' THEN 1 END) AS total_RS FROM internacoes i JOIN especialidade e ON i.\"ESPEC\" = e.\"ESPEC\" JOIN municipios mu ON i.\"MUNIC_RES\" = mu.codigo_6d WHERE mu.estado IN ('MA', 'RS') GROUP BY e.\"DESCRICAO\" HAVING COUNT(CASE WHEN mu.estado = 'MA' THEN 1 END) > 100 AND COUNT(CASE WHEN mu.estado = 'RS' THEN 1 END) > 100 ORDER BY especialidade;",
+    "tables": [
+      "internacoes",
+      "especialidade",
+      "municipios"
+    ],
+    "notes": "HARD: 3-table JOIN + CASE WHEN pivot (AVG per state in separate columns) + HAVING dual condition. Result: 8 specialties. CLINICOS: MA 4.50 days vs RS 7.06 days; CIRURGICO: MA 4.16 vs RS 4.22; OBSTETRICOS: MA 2.18 vs RS 2.65."
+  },
+  {
+    "id": "GT135",
+    "difficulty": "hard",
+    "question": "Quais são os 10 municípios do Maranhão com Bolsa Família acima da média estadual e mortalidade infantil abaixo da média estadual?",
+    "query": "WITH media_ma AS (SELECT AVG(CASE WHEN s.metrica = 'bolsa_familia_total' THEN s.valor END) AS avg_bf, AVG(CASE WHEN s.metrica = 'mortalidade_infantil_1ano' THEN s.valor END) AS avg_mi FROM socioeconomico s JOIN municipios mu ON s.codigo_6d = mu.codigo_6d WHERE mu.estado = 'MA'), por_municipio AS (SELECT mu.nome, MAX(CASE WHEN s.metrica = 'bolsa_familia_total' THEN s.valor END) AS bolsa_familia, MAX(CASE WHEN s.metrica = 'mortalidade_infantil_1ano' THEN s.valor END) AS mort_infantil FROM socioeconomico s JOIN municipios mu ON s.codigo_6d = mu.codigo_6d WHERE mu.estado = 'MA' GROUP BY mu.nome) SELECT pm.nome, pm.bolsa_familia, pm.mort_infantil FROM por_municipio pm, media_ma mm WHERE pm.bolsa_familia > mm.avg_bf AND pm.mort_infantil < mm.avg_mi AND pm.bolsa_familia IS NOT NULL AND pm.mort_infantil IS NOT NULL ORDER BY pm.bolsa_familia DESC LIMIT 10;",
+    "tables": [
+      "socioeconomico",
+      "municipios"
+    ],
+    "notes": "HARD: 2 CTEs with conditional AVG/MAX pivot on two socioeconomico metrics, cross-join for comparison, dual WHERE filter on both averages. Result: 10 municipalities including São Luís (R$80.7M BF, 18.1 infant mortality), Imperatriz (R$20.4M, 19.52). Identifies cities benefiting from social programs with better infant health outcomes."
+  }
+]
