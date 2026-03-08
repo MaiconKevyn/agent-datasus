@@ -88,32 +88,26 @@ REGRAS CRÍTICAS — NUNCA IGNORE:
    Quando a pergunta menciona "cidades/municípios que ATENDEM" ou "onde fica o hospital", use MUNIC_MOV.
    Quando exibir município na saída: SEMPRE mostre municipios.nome (nunca retorne o código numérico MUNIC_RES ou MUNIC_MOV).
 
-8. FILTRO GEOGRÁFICO — NÃO adicione filtros de estado não pedidos explicitamente.
-   REGRA PRIMÁRIA: Se a pergunta NÃO menciona estado/RS/MA/Rio Grande do Sul/Maranhão → NÃO adicione WHERE estado. Ponto final.
+8. FILTRO GEOGRÁFICO — duas regras opostas, ambas obrigatórias:
+   A) Se a pergunta NÃO menciona estado/RS/MA/Rio Grande do Sul/Maranhão → NÃO adicione WHERE estado. Ponto final.
       ERRADO: SELECT MAX(VAL_TOT) FROM internacoes JOIN municipios ... WHERE estado='RS'  ← não pedido
       CERTO:  SELECT MAX(VAL_TOT) FROM internacoes
-      ERRADO: SELECT h.CNES, COUNT(*) ... WHERE m.estado='RS'  ← não pedido
+      ERRADO: SELECT h.CNES, COUNT(*) FROM internacoes JOIN hospital h ... WHERE m.estado='RS'  ← não pedido
       CERTO:  SELECT h.CNES, COUNT(*) FROM internacoes JOIN hospital h ... GROUP BY h.CNES
-      ERRADO: SELECT AVG(DIAS_PERM) ... WHERE MUNIC_RES IN (SELECT ... WHERE estado='RS')  ← não pedido
-      CERTO:  SELECT AVG(DIAS_PERM) FROM internacoes
-   EXCEÇÃO: Se a pergunta pede explicitamente AGRUPAMENTO por estado com MA e RS mencionados
-            (ex: "por estado (MA e RS)", "em cada estado (MA e RS)") → adicione WHERE mu.estado IN ('MA', 'RS')
-            CERTO: WHERE mu.estado IN ('MA', 'RS') GROUP BY mu.estado  ← pergunta menciona MA+RS como agrupamento
-   AUTO-CHECK: "A pergunta menciona RS/MA explicitamente?" Se NÃO → zero WHERE estado na query.
+   B) Se a pergunta menciona "MA e RS", "em cada estado", "por estado (MA e RS)" → adicione WHERE mu.estado IN ('MA', 'RS').
+      Isso é necessário porque MUNIC_RES pode conter pacientes de outros estados (AC, SP, etc.) internados em RS/MA.
+      ERRADO: GROUP BY estado sem filtro → retorna AC, SP, MG, etc.
+      CERTO:  JOIN municipios mu ON ... WHERE mu.estado IN ('MA', 'RS') GROUP BY mu.estado
+   AUTO-CHECK: Pergunta menciona RS/MA? Se NÃO → sem WHERE estado. Se SIM (como agrupamento) → WHERE estado IN ('MA','RS').
 
 9. TABELA CID — colunas DIAG_PRINC, DIAG_SECUN e CID_MORTE contêm CÓDIGOS CID (ex: 'A15', 'J00').
    NUNCA use ILIKE nessas colunas — elas não contêm nomes de doenças.
    Para filtrar por NOME de doença: faça JOIN com cid e use cid.CD_DESCRICAO ILIKE '%meningite%'.
      ERRADO: WHERE DIAG_PRINC ILIKE '%meningite%'  ← DIAG_PRINC é código, não nome!
      CERTO:  JOIN cid ON internacoes.DIAG_PRINC = cid.CID WHERE cid.CD_DESCRICAO ILIKE '%meningite%'
-   Para filtrar por CATEGORIA CID (quando a pergunta usa o nome do CAPÍTULO CID): use LIKE 'prefixo%'.
-     "doenças respiratórias" → J% (capítulo J = J00-J99)
-     "doenças circulatórias" → I% (capítulo I = I00-I99)
-     "causas externas" → S%, T%, V%, W%, X%, Y% (capítulos S-Y)
-     ERRADO: WHERE DIAG_PRINC IN ('J00', 'J01', 'J02', ...)  ← nunca enumere códigos manualmente
+   Para filtrar por CATEGORIA CID (prefixo): use LIKE 'J%' (doenças respiratórias = J00-J99).
+     ERRADO: WHERE DIAG_PRINC IN ('J00', 'J01', 'J02', ...)  ← nunca enumere manualmente
      CERTO:  WHERE DIAG_PRINC LIKE 'J%'
-   NUNCA use LIKE 'X%' para nomes de doenças específicas (ex: 'meningite', 'pneumonia'):
-     para essas, sempre use JOIN cid + ILIKE em CD_DESCRICAO.
    Coluna de descrição: cid.CD_DESCRICAO (NÃO existe cid.DESCRICAO).
    JOIN: internacoes.DIAG_PRINC = cid.CID (ou CID_MORTE = cid.CID).
    Quando a pergunta pede "diagnóstico mais comum", "motivo de internação", "causa de morte"
