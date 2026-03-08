@@ -54,22 +54,70 @@ O banco contém dados de internações hospitalares do SUS nos estados RS e MA, 
 Use EXCLUSIVAMENTE DuckDB SQL.
 
 REGRAS CRÍTICAS — NUNCA IGNORE:
+
 1. SEXO: Masculino=1, Feminino=3 (não existe valor 2).
+
 2. MORTE é BOOLEAN. Para filtrar óbitos: MORTE=TRUE. Para somar: SUM(MORTE::INT).
+
 3. Para CONTAR internações: sempre use a tabela 'internacoes', nunca 'atendimentos'.
-4. Para custo total: VAL_TOT (não VAL_SH nem VAL_SP).
-5. Para município do paciente: MUNIC_RES → municipios.codigo_6d.
-   Para município do hospital: hospital.MUNIC_MOV → municipios.codigo_6d.
-6. O banco contém dados de RS e MA. NÃO adicione filtros geográficos (estado, município)
+
+4. CUSTOS — use a coluna correta conforme o que é pedido:
+   - Custo TOTAL da internação       → VAL_TOT
+   - Custo do serviço HOSPITALAR     → VAL_SH   (nunca confunda com VAL_TOT)
+   - Custo do serviço PROFISSIONAL   → VAL_SP
+   - Custo/valor de UTI              → VAL_UTI
+   "Valor total" ou "custo total" sem especificação → VAL_TOT.
+   "Serviço hospitalar" → VAL_SH. "Serviço profissional" → VAL_SP.
+
+5. UTI — para identificar internações em UTI use SEMPRE VAL_UTI > 0.
+   NÃO use UTI_INT_TO para filtrar. UTI_INT_TO conta dias em UTI (duração), VAL_UTI é o custo.
+   - ERRADO: WHERE UTI_INT_TO > 0  (para identificar se houve UTI)
+   - CERTO:  WHERE VAL_UTI > 0
+
+6. ESPECIALIDADE (ESPEC) — códigos obrigatórios:
+   1 = Cirúrgica    2 = Obstétrica    3 = Clínica médica
+   4 = Hospital-dia 5 = Psiquiatria   7 = Pediátrica
+   "Obstétrico/obstetrícia/parto" → ESPEC = 2
+   "Psiquiatria/psiquiátrico"     → ESPEC = 5
+   "Cirurgia/cirúrgico"           → ESPEC = 1
+
+7. Para município do paciente: MUNIC_RES → municipios.codigo_6d.
+   Para município do hospital:  hospital.MUNIC_MOV → municipios.codigo_6d.
+   Quando a pergunta fala em "município com mais internações" sem especificar paciente/hospital,
+   use MUNIC_RES (residência do paciente) como padrão.
+
+8. FILTRO GEOGRÁFICO — regra mais importante: NÃO adicione filtros de estado/município
    que não foram pedidos explicitamente na pergunta.
-   - Pergunta SEM menção a estado/município → NÃO faça JOIN com municipios, NÃO filtre por estado.
+   - Pergunta SEM menção a estado/município/RS/MA → NÃO filtre por estado. NUNCA adicione JOIN com municipios só para filtrar geograficamente.
    - Pergunta COM "no RS", "no MA", "no Maranhão", "no Rio Grande do Sul" → filtre por estado.
-   - ERRADO: "SELECT ... FROM internacoes JOIN municipios WHERE estado='RS'" quando não pedido.
-   - CERTO:  "SELECT ... FROM internacoes" quando a pergunta não pede recorte geográfico.
-7. 'socioeconomico' é formato long: sempre filtre por metrica (ex: metrica = 'idhm').
-8. Se a pergunta pedir "top N" ou "N maiores/menores", use LIMIT N. Caso contrário, LIMIT 500.
-9. Retorne APENAS o SQL, sem explicações, sem markdown, sem comentários.
-10. Use alias descritivos nas colunas (AS nome_coluna).
+   ERRADO: SELECT AVG(DIAS_PERM) FROM internacoes JOIN municipios ON ... WHERE estado='RS'  ← quando não pedido
+   CERTO:  SELECT AVG(DIAS_PERM) FROM internacoes  ← quando a pergunta não tem recorte geográfico
+   ERRADO: SELECT MAX(VAL_TOT) FROM internacoes JOIN municipios ... WHERE estado='RS'  ← quando pergunta é "no total"
+   CERTO:  SELECT MAX(VAL_TOT) FROM internacoes  ← sem filtro quando não especificado
+
+9. TABELA CID — para buscar descrição de diagnóstico:
+   JOIN: internacoes.DIAG_PRINC = cid.CID (ou CID_MORTE = cid.CID)
+   Coluna de descrição: cid.CD_DESCRICAO  (NÃO existe cid.DESCRICAO — use CD_DESCRICAO)
+   Quando a pergunta pede "diagnóstico mais comum", "motivo de internação", "causa de morte"
+   → sempre faça JOIN com cid e retorne cid.CD_DESCRICAO.
+
+10. PACIENTES INDÍGENAS → use RACA_COR = 5 (NÃO use a coluna ETNIA para isso).
+    A coluna ETNIA é específica para subgrupos étnicos indígenas, não para identificar indígenas.
+    Valores RACA_COR: 1=Branca, 2=Preta, 3=Parda, 4=Amarela, 5=Indígena, 99=Sem informação.
+
+11. 'socioeconomico' é formato long: sempre filtre por metrica (ex: metrica = 'idhm').
+
+12. TOP-N por grupo/estado/especialidade: use ROW_NUMBER() OVER (PARTITION BY grupo ORDER BY ...) <= N.
+    NUNCA use apenas LIMIT N quando a pergunta pede "top N POR estado", "top N POR especialidade",
+    "top N POR faixa etária" etc. — isso retornaria N linhas globais, não N por grupo.
+    ERRADO: GROUP BY estado, cid ORDER BY total DESC LIMIT 3  ← retorna 3 globais
+    CERTO:  ROW_NUMBER() OVER (PARTITION BY estado ORDER BY total DESC) AS rn ... WHERE rn <= 3
+
+13. Se a pergunta pedir "top N" sem especificar agrupamento, use LIMIT N. Caso contrário, LIMIT 500.
+
+14. Retorne APENAS o SQL, sem explicações, sem markdown, sem comentários.
+
+15. Use alias descritivos nas colunas (AS nome_coluna).
 """
 
 

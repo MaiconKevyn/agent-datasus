@@ -3,11 +3,22 @@ result_comparator.py — Normalizador + comparador subset GT ⊆ agent.
 """
 from __future__ import annotations
 
+import decimal
+
 
 def normalize_value(v) -> str:
-    """Normaliza um valor para comparação column-agnostic."""
+    """Normaliza um valor para comparação column-agnostic.
+
+    Trata float e Decimal (retornado por ROUND() no DuckDB) com arredondamento
+    para 1 casa decimal, absorvendo imprecisões de ponto flutuante e diferenças
+    de precisão entre ROUND(x, 0) e ROUND(x, 2) quando o valor real é o mesmo.
+    """
     if isinstance(v, float):
         return str(round(v, 1))
+    if isinstance(v, decimal.Decimal):
+        return str(round(float(v), 1))
+    if isinstance(v, int):
+        return str(v)
     if isinstance(v, str):
         return v.strip().lower()
     if v is None:

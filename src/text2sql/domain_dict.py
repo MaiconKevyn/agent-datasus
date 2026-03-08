@@ -76,9 +76,26 @@ DOMAIN_DICT: list[DomainEntry] = [
              "Para total: SUM(VAL_TOT). Para média: AVG(VAL_TOT).",
     ),
     DomainEntry(
-        terms=["custo de uti", "valor de uti", "custo uti"],
+        terms=["serviço hospitalar", "val_sh", "cobrança de serviço hospitalar",
+               "valor de serviço hospitalar", "média de serviço hospitalar"],
+        table="internacoes", column="VAL_SH",
+        note="VAL_SH é o custo do serviço hospitalar (diária, OPME, etc). "
+             "NÃO confunda com VAL_TOT (que é o total incluindo profissionais e UTI). "
+             "Use quando a pergunta menciona explicitamente 'serviço hospitalar'.",
+    ),
+    DomainEntry(
+        terms=["serviço profissional", "val_sp", "serviços profissionais",
+               "honorários médicos", "valor profissional"],
+        table="internacoes", column="VAL_SP",
+        note="VAL_SP é o custo do serviço profissional (médicos). "
+             "Use quando a pergunta menciona 'serviço profissional' ou 'honorários'.",
+    ),
+    DomainEntry(
+        terms=["custo de uti", "valor de uti", "custo uti", "gasto uti"],
         table="internacoes", column="VAL_UTI",
-        note="VAL_UTI é o valor pago especificamente pela UTI.",
+        note="VAL_UTI é o valor pago especificamente pela UTI. "
+             "Para filtrar internações que tiveram UTI: VAL_UTI > 0. "
+             "NÃO use UTI_INT_TO para identificar se houve UTI (UTI_INT_TO conta dias).",
     ),
 
     # ── TEMPO ────────────────────────────────────────────────────────────────
@@ -179,18 +196,35 @@ DOMAIN_DICT: list[DomainEntry] = [
 
     # ── ESPECIALIDADE ────────────────────────────────────────────────────────
     DomainEntry(
-        terms=["especialidade", "tipo de leito", "cirurgia", "clínica",
-               "obstetrícia", "pediatria", "psiquiatria", "uti"],
+        terms=["especialidade", "tipo de leito", "tipo de internação"],
         table="especialidade", column="DESCRICAO",
         note="JOIN: internacoes.ESPEC = especialidade.ESPEC. "
-             "Cirúrgico=1, Obstétrico=2, Clínico=3, Crônico=4, "
-             "Psiquiatria=5, Pediátrico=7, UTI Adulto=74-76.",
+             "Códigos: 1=Cirúrgica, 2=Obstétrica, 3=Clínica médica, "
+             "4=Hospital-dia, 5=Psiquiatria, 7=Pediátrica.",
     ),
     DomainEntry(
-        terms=["internação em uti", "uti", "terapia intensiva", "dias de uti"],
-        table="internacoes", column="UTI_INT_TO",
-        note="UTI_INT_TO = número de dias em UTI. "
-             "0 significa sem UTI. Para filtrar com UTI: UTI_INT_TO > 0.",
+        terms=["obstétrico", "obstetrícia", "parto", "gravidez", "gestante",
+               "internação obstétrica", "casos obstétricos"],
+        table="internacoes", column="ESPEC", value="2",
+        note="ESPEC=2 para internações obstétricas. NÃO use ESPEC=1 para obstetrícia.",
+    ),
+    DomainEntry(
+        terms=["psiquiatria", "psiquiátrico", "saúde mental", "internação psiquiátrica"],
+        table="internacoes", column="ESPEC", value="5",
+        note="ESPEC=5 para internações psiquiátricas. NÃO use ESPEC=2 para psiquiatria.",
+    ),
+    DomainEntry(
+        terms=["cirurgia", "cirúrgico", "internação cirúrgica"],
+        table="internacoes", column="ESPEC", value="1",
+        note="ESPEC=1 para internações cirúrgicas.",
+    ),
+    DomainEntry(
+        terms=["internação em uti", "internações uti", "terapia intensiva",
+               "uti", "unidade de terapia intensiva", "dias de uti"],
+        table="internacoes", column="VAL_UTI",
+        note="Para identificar internações com UTI: VAL_UTI > 0. "
+             "UTI_INT_TO conta dias em UTI (duração), mas VAL_UTI > 0 é o filtro correto. "
+             "Para custo de UTI: SUM(VAL_UTI) ou AVG(VAL_UTI).",
     ),
 
     # ── PROCEDIMENTOS ────────────────────────────────────────────────────────
@@ -210,10 +244,18 @@ DOMAIN_DICT: list[DomainEntry] = [
     # ── RAÇA/COR ─────────────────────────────────────────────────────────────
     DomainEntry(
         terms=["raça", "cor", "raça/cor", "etnia racial",
-               "branco", "preto", "pardo", "amarelo", "indígena"],
+               "branco", "preto", "pardo", "amarelo"],
         table="raca_cor", column="DESCRICAO",
         note="JOIN: internacoes.RACA_COR = raca_cor.RACA_COR. "
              "Valores: 1=BRANCA, 2=PRETA, 3=PARDA, 4=AMARELA, 5=INDIGENA, 99=SEM INFO.",
+    ),
+    DomainEntry(
+        terms=["indígena", "indigena", "pacientes indígenas", "indígenas",
+               "povos indígenas", "etnia indígena"],
+        table="internacoes", column="RACA_COR", value="5",
+        note="Indígenas: use RACA_COR = 5 (NÃO use ETNIA para identificar indígenas). "
+             "A coluna ETNIA codifica subgrupos étnicos entre indígenas, não identifica indígenas. "
+             "ERRADO: WHERE ETNIA = 5. CERTO: WHERE RACA_COR = 5.",
     ),
 
     # ── VÍNCULO PREVIDENCIÁRIO ────────────────────────────────────────────────
