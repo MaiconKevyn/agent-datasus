@@ -117,10 +117,11 @@ DOMAIN_DICT: list[DomainEntry] = [
         note="DIAS_PERM é a duração em dias. Para média: AVG(DIAS_PERM).",
     ),
     DomainEntry(
-        terms=["pandemia", "covid", "2020", "2021"],
+        terms=["pandemia", "covid", "covid-19", "coronavirus"],
         table="internacoes", column="DT_INTER",
         note="Para análises de pandemia COVID-19, filtre: "
-             "EXTRACT(year FROM DT_INTER) IN (2020, 2021).",
+             "EXTRACT(year FROM DT_INTER) IN (2020, 2021). "
+             "Se a pergunta especifica um ano exato (ex: 'em 2020'), use apenas aquele ano.",
     ),
 
     # ── SEXO ─────────────────────────────────────────────────────────────────

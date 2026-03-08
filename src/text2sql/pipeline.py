@@ -83,35 +83,49 @@ REGRAS CRÍTICAS — NUNCA IGNORE:
 
 7. Para município do paciente: MUNIC_RES → municipios.codigo_6d.
    Para município do hospital:  hospital.MUNIC_MOV → municipios.codigo_6d.
-   Quando a pergunta fala em "município com mais internações" sem especificar paciente/hospital,
-   use MUNIC_RES (residência do paciente) como padrão.
+   Quando a pergunta pede "municípios com mais internações/pacientes" SEM especificar hospital ou paciente,
+   use MUNIC_RES como padrão (perspectiva do paciente).
+   Quando a pergunta menciona "cidades/municípios que ATENDEM" ou "onde fica o hospital", use MUNIC_MOV.
+   Quando exibir município na saída: SEMPRE mostre municipios.nome (nunca retorne o código numérico MUNIC_RES ou MUNIC_MOV).
 
-8. FILTRO GEOGRÁFICO — regra mais importante: NÃO adicione filtros de estado/município
-   que não foram pedidos explicitamente na pergunta.
-   - Pergunta SEM menção a estado/município/RS/MA → NÃO filtre por estado. NUNCA adicione JOIN com municipios só para filtrar geograficamente.
+8. FILTRO GEOGRÁFICO — NÃO adicione filtros de estado/município não pedidos explicitamente.
+   REGRA DE OURO: Se JOIN com municipios é necessário APENAS para mostrar o nome, NÃO adicione WHERE estado.
+   - Pergunta SEM menção a estado/RS/MA/Rio Grande do Sul/Maranhão → SEM WHERE estado. Ponto final.
    - Pergunta COM "no RS", "no MA", "no Maranhão", "no Rio Grande do Sul" → filtre por estado.
-   ERRADO: SELECT AVG(DIAS_PERM) FROM internacoes JOIN municipios ON ... WHERE estado='RS'  ← quando não pedido
-   CERTO:  SELECT AVG(DIAS_PERM) FROM internacoes  ← quando a pergunta não tem recorte geográfico
-   ERRADO: SELECT MAX(VAL_TOT) FROM internacoes JOIN municipios ... WHERE estado='RS'  ← quando pergunta é "no total"
-   CERTO:  SELECT MAX(VAL_TOT) FROM internacoes  ← sem filtro quando não especificado
+   ERRADO: SELECT MAX(VAL_TOT) FROM internacoes JOIN municipios ... WHERE estado='RS'  ← não pedido
+   CERTO:  SELECT MAX(VAL_TOT) FROM internacoes
+   ERRADO: SELECT h.CNES, COUNT(*) FROM internacoes JOIN hospital h ... JOIN municipios m ... WHERE m.estado='RS'  ← não pedido
+   CERTO:  SELECT h.CNES, COUNT(*) FROM internacoes JOIN hospital h ... GROUP BY h.CNES
+   AUTO-CHECK OBRIGATÓRIO: antes de escrever o SQL final, leia a pergunta e verifique:
+   "A pergunta menciona explicitamente RS, MA, estado, Rio Grande do Sul ou Maranhão?"
+   Se NÃO → remova qualquer WHERE estado ou WHERE m.estado da query.
 
 9. TABELA CID — para buscar descrição de diagnóstico:
    JOIN: internacoes.DIAG_PRINC = cid.CID (ou CID_MORTE = cid.CID)
    Coluna de descrição: cid.CD_DESCRICAO  (NÃO existe cid.DESCRICAO — use CD_DESCRICAO)
    Quando a pergunta pede "diagnóstico mais comum", "motivo de internação", "causa de morte"
    → sempre faça JOIN com cid e retorne cid.CD_DESCRICAO.
+   NUNCA enumere códigos CID manualmente (ex: IN ('A39', 'G00', ...)).
+   Para filtrar por NOME de doença: use cid.CD_DESCRICAO ILIKE '%meningite%'.
+   Ao fazer JOIN com cid, agrupe por cid.CD_DESCRICAO, não por internacoes.DIAG_PRINC.
 
 10. PACIENTES INDÍGENAS → use RACA_COR = 5 (NÃO use a coluna ETNIA para isso).
     A coluna ETNIA é específica para subgrupos étnicos indígenas, não para identificar indígenas.
     Valores RACA_COR: 1=Branca, 2=Preta, 3=Parda, 4=Amarela, 5=Indígena, 99=Sem informação.
 
-11. 'socioeconomico' é formato long: sempre filtre por metrica (ex: metrica = 'idhm').
+11. SEXO na saída: quando o resultado mostrar sexo do paciente, exiba o rótulo textual:
+    CASE WHEN SEXO=1 THEN 'Masculino' WHEN SEXO=3 THEN 'Feminino' ELSE 'Outro' END
+    Nunca retorne apenas o código numérico 1 ou 3 como valor de sexo na saída.
 
-12. TOP-N por grupo/estado/especialidade: use ROW_NUMBER() OVER (PARTITION BY grupo ORDER BY ...) <= N.
-    NUNCA use apenas LIMIT N quando a pergunta pede "top N POR estado", "top N POR especialidade",
-    "top N POR faixa etária" etc. — isso retornaria N linhas globais, não N por grupo.
+12. 'socioeconomico' é formato long: sempre filtre por metrica (ex: metrica = 'idhm').
+
+13. TOP-N por grupo/estado/especialidade: use ROW_NUMBER() OVER (PARTITION BY grupo ORDER BY ...) <= N.
+    PALAVRAS-CHAVE que obrigam PARTITION BY: "em cada estado", "por estado", "de cada ano",
+    "por ano", "para cada faixa etária", "por faixa etária", "para cada sexo", "por especialidade",
+    "em cada mês", "por hospital", "para cada grupo".
     ERRADO: GROUP BY estado, cid ORDER BY total DESC LIMIT 3  ← retorna 3 globais
     CERTO:  ROW_NUMBER() OVER (PARTITION BY estado ORDER BY total DESC) AS rn ... WHERE rn <= 3
+    Exemplo: "top 3 diagnósticos POR estado" → PARTITION BY estado; "top 1 por ano" → PARTITION BY ano.
 
 13. Se a pergunta pedir "top N" sem especificar agrupamento, use LIMIT N. Caso contrário, LIMIT 500.
 
